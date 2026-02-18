@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>思奇宝 - 儿童数学思维练习</title>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Nunito', 'ZCOOL KuaiLe', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 60px 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            animation: bounceIn 1s ease-out;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .logo {
+            font-size: clamp(3.5rem, 12vw, 6rem);
+            font-weight: 900;
+            margin-bottom: 20px;
+            letter-spacing: 8px;
+        }
+
+        .logo .char1 { color: #FFE66D; text-shadow: 4px 4px 0px rgba(0,0,0,0.2); }
+        .logo .char2 { color: #4ECDC4; text-shadow: 4px 4px 0px rgba(0,0,0,0.2); }
+        .logo .char3 { color: #FF6B6B; text-shadow: 4px 4px 0px rgba(0,0,0,0.2); }
+
+        .subtitle {
+            color: rgba(255,255,255,0.95);
+            font-size: clamp(1.1rem, 4vw, 1.6rem);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            font-weight: 700;
+            letter-spacing: 4px;
+        }
+
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .game-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 25px;
+            padding: 35px 20px;
+            text-align: center;
+            text-decoration: none;
+            color: #2C3E50;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #FF6B6B, #4ECDC4, #FFE66D, #667eea);
+        }
+
+        .game-card:hover {
+            transform: translateY(-10px) scale(1.05);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .game-icon {
+            font-size: 3.5rem;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .game-title {
+            font-size: 1.4rem;
+            font-weight: 900;
+            margin-bottom: 8px;
+            color: #2C3E50;
+        }
+
+        .game-desc {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+            font-weight: 600;
+        }
+
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            color: rgba(255,255,255,0.8);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 40px 15px;
+            }
+
+            .games-grid {
+                gap: 15px;
+            }
+
+            .game-card {
+                padding: 25px 15px;
+                border-radius: 20px;
+            }
+
+            .game-icon {
+                font-size: 2.8rem;
+            }
+
+            .game-title {
+                font-size: 1.2rem;
+            }
+
+            .header {
+                margin-bottom: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="logo">
+                <span class="char1">思</span><span class="char2">奇</span><span class="char3">宝</span>
+            </h1>
+            <p class="subtitle">儿童数学思维练习</p>
+        </header>
+
+        <div class="games-grid">
+            <a href="GuessNumber.html" class="game-card">
+                <span class="game-icon">🔢</span>
+                <div class="game-title">猜数字</div>
+                <div class="game-desc">数字推理</div>
+            </a>
+
+            <a href="Math24.html" class="game-card">
+                <span class="game-icon">🎯</span>
+                <div class="game-title">24点</div>
+                <div class="game-desc">数学运算</div>
+            </a>
+
+            <a href="Gobang.html" class="game-card">
+                <span class="game-icon">⚫</span>
+                <div class="game-title">五子棋</div>
+                <div class="game-desc">策略思维</div>
+            </a>
+
+            <a href="Racing.html" class="game-card">
+                <span class="game-icon">🏎️</span>
+                <div class="game-title">赛车休闲</div>
+                <div class="game-desc">反应训练</div>
+            </a>
+        </div>
+
+        <footer class="footer">
+            <p>让学习变得有趣</p>
+        </footer>
+    </div>
+</body>
+</html>

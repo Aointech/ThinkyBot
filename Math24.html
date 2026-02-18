@@ -1,0 +1,2167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>数学游戏24点</title>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #FF6B6B;
+            --secondary: #4ECDC4;
+            --accent: #FFE66D;
+            --dark: #2C3E50;
+            --light: #F7F9FC;
+            --card-red: #E74C3C;
+            --card-blue: #3498DB;
+            --card-green: #27AE60;
+            --card-orange: #F39C12;
+            --card-purple: #9B59B6;
+            --shadow: rgba(0, 0, 0, 0.15);
+            --shadow-hover: rgba(0, 0, 0, 0.25);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Nunito', 'ZCOOL KuaiLe', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Floating particles background */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.3; }
+            50% { transform: translateY(-100px) rotate(180deg); opacity: 0.6; }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 15px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 10px 0;
+            position: relative;
+        }
+
+        .settings-icon-btn {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 45px;
+            height: 45px;
+            border: none;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #ffecd2 0%, #fcb69f 100%);
+            color: var(--dark);
+            font-size: 1.3rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+
+        .settings-icon-btn:hover {
+            transform: translateY(-50%) scale(1.1) rotate(30deg);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        @media (max-width: 480px) {
+            .settings-icon-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 1.1rem;
+                right: -5px;
+            }
+        }
+
+        .game-title {
+            font-size: clamp(2rem, 8vw, 3.5rem);
+            color: white;
+            text-shadow: 3px 3px 0px rgba(0,0,0,0.2), 6px 6px 0px rgba(0,0,0,0.1);
+            margin-bottom: 10px;
+            animation: bounceIn 1s ease-out;
+            letter-spacing: 2px;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .subtitle {
+            color: rgba(255,255,255,0.9);
+            font-size: clamp(0.9rem, 3vw, 1.2rem);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+
+        /* Timer */
+        .timer {
+            text-align: center;
+            font-size: 1.3rem;
+            font-weight: 900;
+            color: var(--dark);
+            margin: 10px 0;
+            display: none;
+        }
+
+        .timer.show {
+            display: block;
+        }
+
+        .timer.warning {
+            color: #e74c3c;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Game Board */
+        .game-board {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 30px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        /* Score Display */
+        .score-display {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .score-item {
+            text-align: center;
+            padding: 8px 15px;
+            background: linear-gradient(145deg, #f5f7fa 0%, #e4e8ec 100%);
+            border-radius: 12px;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .score-label {
+            font-size: 0.7rem;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .score-value {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #95a5a6;
+        }
+
+        .difficulty-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .difficulty-badge.easy {
+            background: linear-gradient(145deg, #a8edea 0%, #fed6e3 100%);
+            color: #2c3e50;
+        }
+
+        .difficulty-badge.medium {
+            background: linear-gradient(145deg, #f6d365 0%, #fda085 100%);
+            color: #fff;
+        }
+
+        .difficulty-badge.hard {
+            background: linear-gradient(145deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+
+        .score-item {
+            text-align: center;
+            padding: 10px 20px;
+            background: linear-gradient(145deg, #f5f7fa 0%, #e4e8ec 100%);
+            border-radius: 15px;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .score-label {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .score-value {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: var(--dark);
+        }
+
+        /* Cards Container */
+        .cards-container {
+            display: flex;
+            justify-content: center;
+            gap: clamp(8px, 2vw, 20px);
+            margin: 25px 0;
+            flex-wrap: wrap;
+            perspective: 1000px;
+        }
+
+        /* Playing Cards */
+        .card {
+            width: clamp(70px, 18vw, 100px);
+            height: clamp(100px, 26vw, 140px);
+            background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(2rem, 6vw, 3rem);
+            font-weight: 900;
+            box-shadow: 
+                0 4px 0 #d1d8e0,
+                0 10px 20px var(--shadow),
+                inset 0 1px 0 rgba(255,255,255,0.8);
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            position: relative;
+            transform-style: preserve-3d;
+            user-select: none;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            border: 2px solid;
+            border-radius: 10px;
+            opacity: 0.3;
+        }
+
+        .card.red {
+            color: var(--card-red);
+        }
+
+        .card.red::before {
+            border-color: var(--card-red);
+        }
+
+        .card.blue {
+            color: var(--card-blue);
+        }
+
+        .card.blue::before {
+            border-color: var(--card-blue);
+        }
+
+        .card.green {
+            color: var(--card-green);
+        }
+
+        .card.green::before {
+            border-color: var(--card-green);
+        }
+
+        .card.orange {
+            color: var(--card-orange);
+        }
+
+        .card.orange::before {
+            border-color: var(--card-orange);
+        }
+
+        .card:hover {
+            transform: translateY(-10px) rotateY(5deg) scale(1.05);
+            box-shadow: 
+                0 8px 0 #d1d8e0,
+                0 20px 40px var(--shadow-hover),
+                inset 0 1px 0 rgba(255,255,255,0.8);
+        }
+
+        .card.used {
+            opacity: 0.4;
+            transform: scale(0.9);
+            pointer-events: none;
+        }
+
+        .card.selected {
+            transform: translateY(-20px) scale(1.1);
+            box-shadow: 
+                0 0 0 4px var(--accent),
+                0 15px 30px var(--shadow-hover);
+        }
+
+        .card.disabled {
+            opacity: 0.4;
+            pointer-events: none;
+            filter: grayscale(0.5);
+        }
+
+        /* Card decorations */
+        .card-corner {
+            position: absolute;
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        .card-corner.top {
+            top: 5px;
+            left: 8px;
+        }
+
+        .card-corner.bottom {
+            bottom: 5px;
+            right: 8px;
+            transform: rotate(180deg);
+        }
+
+        /* Expression Display */
+        .expression-display {
+            background: linear-gradient(145deg, #2c3e50 0%, #34495e 100%);
+            border-radius: 15px;
+            padding: 15px 50px 15px 15px;
+            margin: 15px 0;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(1.2rem, 4vw, 1.8rem);
+            color: white;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+            box-shadow: inset 0 4px 10px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+            flex-wrap: wrap;
+            word-break: break-all;
+        }
+
+        .expression-display::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .expression-display .placeholder {
+            color: rgba(255,255,255,0.4);
+            font-style: italic;
+        }
+
+        .delete-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #ff6b6b 0%, #ee5a6f 100%);
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 10px rgba(255, 107, 107, 0.4);
+            z-index: 10;
+        }
+
+        .delete-btn:hover {
+            transform: translateY(-50%) scale(1.1);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.6);
+        }
+
+        .delete-btn:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+
+        .delete-btn.hidden {
+            display: none;
+        }
+
+        /* Submit button after expression display */
+        .submit-section {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            align-items: stretch;
+        }
+
+        .submit-btn {
+            flex: 1;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            background: linear-gradient(145deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(79, 172, 254, 0.5);
+        }
+
+        /* Mobile: submit button full width below expression */
+        @media (max-width: 480px) {
+            .submit-section {
+                flex-direction: column;
+            }
+            
+            .submit-btn {
+                width: 100%;
+            }
+        }
+
+        /* Operators */
+        .operators {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 15px 0;
+            flex-wrap: nowrap;
+        }
+
+        .operator-btn {
+            width: clamp(40px, 13vw, 60px);
+            height: clamp(40px, 13vw, 60px);
+            border: none;
+            border-radius: 50%;
+            font-size: clamp(1.2rem, 4vw, 1.8rem);
+            font-weight: 900;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            background: linear-gradient(145deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            font-family: inherit;
+            flex-shrink: 0;
+        }
+
+        .operator-btn:hover {
+            transform: translateY(-5px) scale(1.15);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.5);
+        }
+
+        .operator-btn:active {
+            transform: translateY(-2px) scale(1.05);
+        }
+
+        .operator-btn.disabled {
+            opacity: 0.3;
+            pointer-events: none;
+            filter: grayscale(1);
+        }
+
+        /* Action Buttons - 5 buttons in a row */
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            flex: 1;
+            min-width: 60px;
+            max-width: 120px;
+            padding: 12px 8px;
+            border: none;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: clamp(0.8rem, 2.5vw, 0.95rem);
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+
+        .action-btn.new-game {
+            background: linear-gradient(145deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            box-shadow: 0 5px 15px rgba(17, 153, 142, 0.4);
+        }
+
+        .action-btn.check {
+            background: linear-gradient(145deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .action-btn.hint {
+            background: linear-gradient(145deg, #fa709a 0%, #fee140 100%);
+            color: white;
+            box-shadow: 0 5px 15px rgba(250, 112, 154, 0.4);
+        }
+
+        .action-btn.teach {
+            background: linear-gradient(145deg, #a18cd1 0%, #fbc2eb 100%);
+            color: white;
+            box-shadow: 0 5px 15px rgba(161, 140, 209, 0.4);
+        }
+
+        .action-btn.settings {
+            background: linear-gradient(145deg, #ffecd2 0%, #fcb69f 100%);
+            color: var(--dark);
+            box-shadow: 0 5px 15px rgba(252, 182, 159, 0.4);
+        }
+
+        .action-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+
+        .action-btn:active {
+            transform: translateY(-1px);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 25px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            transform: scale(0.8) translateY(50px);
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-title {
+            font-size: 1.8rem;
+            color: var(--dark);
+            margin-bottom: 20px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .modal-content {
+            color: #555;
+            line-height: 1.8;
+            font-size: 1rem;
+        }
+
+        .modal-content h3 {
+            color: var(--dark);
+            margin: 15px 0 10px 0;
+            font-size: 1.2rem;
+        }
+
+        .modal-content .solution-step {
+            background: linear-gradient(145deg, #f5f7fa 0%, #e4e8ec 100%);
+            padding: 15px;
+            border-radius: 12px;
+            margin: 10px 0;
+            border-left: 4px solid var(--secondary);
+        }
+
+        .modal-content .formula {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(145deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.3rem;
+            margin: 15px 0;
+            letter-spacing: 2px;
+        }
+
+        .close-btn {
+            width: 100%;
+            padding: 15px;
+            margin-top: 20px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(145deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-family: inherit;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Settings Styles */
+        .setting-item {
+            background: linear-gradient(145deg, #f5f7fa 0%, #e4e8ec 100%);
+            padding: 15px;
+            border-radius: 12px;
+            margin: 12px 0;
+        }
+
+        .setting-label {
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .difficulty-options {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .difficulty-option {
+            flex: 1;
+            min-width: 80px;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .difficulty-option.easy {
+            border-color: #a8edea;
+            background: linear-gradient(145deg, #a8edea 0%, #fed6e3 100%);
+            color: #2c3e50;
+        }
+
+        .difficulty-option.medium {
+            border-color: #f6d365;
+            background: linear-gradient(145deg, #f6d365 0%, #fda085 100%);
+            color: #fff;
+        }
+
+        .difficulty-option.hard {
+            border-color: #667eea;
+            background: linear-gradient(145deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+
+        .difficulty-option:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .difficulty-option.active {
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.5);
+            transform: scale(1.05);
+        }
+
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+
+        .toggle-slider {
+            width: 50px;
+            height: 26px;
+            background: #ccc;
+            border-radius: 13px;
+            position: relative;
+            transition: background 0.3s ease;
+        }
+
+        .toggle-slider::after {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .toggle-switch.active .toggle-slider {
+            background: linear-gradient(145deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .toggle-switch.active .toggle-slider::after {
+            transform: translateX(24px);
+        }
+
+        .history-item {
+            background: white;
+            padding: 12px;
+            border-radius: 10px;
+            margin: 8px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .history-item.correct {
+            border-left: 4px solid #27ae60;
+        }
+
+        .history-item.wrong {
+            border-left: 4px solid #e74c3c;
+        }
+
+        .history-date {
+            font-size: 0.75rem;
+            color: #7f8c8d;
+        }
+
+        .history-info {
+            flex: 1;
+            margin-left: 10px;
+        }
+
+        .history-numbers {
+            font-weight: 700;
+            color: var(--dark);
+        }
+
+        .history-result {
+            font-size: 0.85rem;
+            color: #555;
+        }
+
+        .history-score {
+            font-weight: 900;
+            font-size: 1.2rem;
+            color: var(--dark);
+        }
+
+        .danger-btn {
+            width: 100%;
+            padding: 12px;
+            margin-top: 15px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(145deg, #ff6b6b 0%, #ee5a6f 100%);
+            color: white;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .danger-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 107, 107, 0.4);
+        }
+
+        .empty-history {
+            text-align: center;
+            padding: 30px;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+
+        /* Success Animation */
+        .success-animation {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 5rem;
+            z-index: 2000;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        .success-animation.show {
+            animation: celebrate 1.5s ease-out forwards;
+        }
+
+        @keyframes celebrate {
+            0% { transform: translate(-50%, -50%) scale(0) rotate(-180deg); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.5) rotate(0deg); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1) rotate(0deg) translateY(-100px); opacity: 0; }
+        }
+
+        /* Confetti */
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            top: -10px;
+            z-index: 1500;
+            pointer-events: none;
+        }
+
+        @keyframes confetti-fall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+
+        /* Hint Badge */
+        .hint-badge {
+            display: inline-block;
+            background: linear-gradient(145deg, #fa709a 0%, #fee140 100%);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .container {
+                padding: 8px;
+            }
+
+            .game-board {
+                padding: 12px;
+                border-radius: 18px;
+            }
+
+            .action-buttons {
+                gap: 5px;
+            }
+
+            .action-btn {
+                padding: 10px 4px;
+                font-size: 0.7rem;
+                min-width: 50px;
+            }
+
+            .score-display {
+                gap: 6px;
+            }
+
+            .score-item {
+                padding: 5px 8px;
+                min-width: 70px;
+            }
+
+            .score-value {
+                font-size: 1.1rem;
+            }
+
+            .difficulty-badge {
+                font-size: 0.7rem;
+                padding: 4px 10px;
+            }
+
+            .expression-display {
+                padding: 12px 45px 12px 12px;
+                font-size: clamp(1rem, 3.5vw, 1.4rem);
+                letter-spacing: 1px;
+                min-height: 50px;
+            }
+
+            .delete-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 0.9rem;
+                right: 6px;
+            }
+
+            .operators {
+                gap: 6px;
+                margin: 12px 0;
+            }
+
+            .operator-btn {
+                width: clamp(38px, 14vw, 55px);
+                height: clamp(38px, 14vw, 55px);
+                font-size: clamp(1rem, 3.5vw, 1.5rem);
+            }
+
+            .card {
+                width: clamp(60px, 16vw, 85px);
+                height: clamp(85px, 22vw, 120px);
+                font-size: clamp(1.6rem, 5vw, 2.5rem);
+            }
+
+            .submit-btn {
+                padding: 12px 15px;
+                font-size: 1rem;
+            }
+        }
+
+        /* Touch feedback */
+        @media (hover: none) {
+            .card:active {
+                transform: scale(0.95);
+            }
+
+            .operator-btn:active {
+                transform: scale(0.9);
+            }
+
+            .action-btn:active {
+                transform: scale(0.98);
+            }
+        }
+
+        /* Loading animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Floating particles -->
+    <div class="particles" id="particles"></div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="game-title">🎮 数学游戏24点</h1>
+            <p class="subtitle">用4个数字算出24，挑战你的大脑！</p>
+            <button class="settings-icon-btn" onclick="openSettings()" title="设置">⚙️</button>
+        </header>
+
+        <!-- Game Board -->
+        <div class="game-board">
+            <!-- Score Display -->
+            <div class="score-display">
+                <div class="score-item">
+                    <div class="score-label">得分</div>
+                    <div class="score-value" id="score">0</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-label">连续正确</div>
+                    <div class="score-value" id="streak">0</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-label">已答题目</div>
+                    <div class="score-value" id="solved">0</div>
+                </div>
+            </div>
+
+            <!-- Timer (Hidden by default) -->
+            <div class="timer" id="timer">⏱️ 00:00</div>
+
+            <!-- Difficulty Badge -->
+            <div style="text-align: center; margin-bottom: 10px;">
+                <span class="difficulty-badge ${currentDifficulty}" id="difficultyBadge">🎮 挑战模式</span>
+            </div>
+
+            <!-- Cards -->
+            <div class="cards-container" id="cardsContainer">
+                <!-- Cards will be generated here -->
+            </div>
+
+            <!-- Operators -->
+            <div class="operators" id="operatorsContainer">
+                <button class="operator-btn" data-op="+" onclick="addOperator('+')">+</button>
+                <button class="operator-btn" data-op="-" onclick="addOperator('-')">-</button>
+                <button class="operator-btn" data-op="×" onclick="addOperator('×')">×</button>
+                <button class="operator-btn" data-op="÷" onclick="addOperator('÷')">÷</button>
+                <button class="operator-btn" data-op="(" onclick="addOperator('(')">(</button>
+                <button class="operator-btn" data-op=")" onclick="addOperator(')')">)</button>
+            </div>
+
+            <!-- Expression Display -->
+            <div class="expression-display" id="expressionDisplay">
+                <span class="placeholder">点击数字和运算符开始游戏...</span>
+                <button class="delete-btn hidden" id="deleteBtn" onclick="deleteLastChar()" title="删除">⌫</button>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="submit-section">
+                <button class="submit-btn" onclick="checkAnswer()">
+                    ✓ 答题
+                </button>
+            </div>
+
+            <!-- Action Buttons - 4 buttons in a row -->
+            <div class="action-buttons">
+                <button class="action-btn new-game" onclick="newQuestion()">
+                    🔄 新问题
+                </button>
+                <button class="action-btn" style="background: linear-gradient(145deg, #ff9a9e 0%, #fecfef 100%); color: var(--dark); box-shadow: 0 5px 15px rgba(255, 154, 158, 0.4);" onclick="openCustomQuestion()">
+                    ❓ 我问你
+                </button>
+                <button class="action-btn hint" onclick="showHint()">
+                    💡 提示
+                </button>
+                <button class="action-btn teach" onclick="showTeach()">
+                    📖 教我
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="modal" onclick="closeModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-title" id="modalTitle">提示</div>
+            <div class="modal-content" id="modalContent"></div>
+            <button class="close-btn" onclick="closeModal()">知道了</button>
+        </div>
+    </div>
+
+    <!-- Success Animation -->
+    <div class="success-animation" id="successAnimation">🎉</div>
+
+    <script>
+        // Game State
+        let currentNumbers = [];
+        let currentExpression = [];
+        let usedCards = new Set();
+        let score = 0;
+        let streak = 0;
+        let solved = 0;
+        let currentDifficulty = 'easy';
+        let solutions = [];
+        let timerInterval = null;
+        let seconds = 0;
+        let timerEnabled = false;
+        let gameHistory = [];
+
+        // Card colors
+        const cardColors = ['red', 'blue', 'green', 'orange'];
+
+        // Available operators by difficulty
+        const operatorsByDifficulty = {
+            easy: ['+', '-'],
+            medium: ['+', '-', '×'],
+            hard: ['+', '-', '×', '÷']
+        };
+
+        // Load settings from localStorage
+        function loadSettings() {
+            const savedDifficulty = localStorage.getItem('math24_difficulty');
+            const savedTimer = localStorage.getItem('math24_timer');
+            
+            if (savedDifficulty) {
+                currentDifficulty = savedDifficulty;
+            }
+            
+            if (savedTimer !== null) {
+                timerEnabled = savedTimer === 'true';
+            }
+            
+            updateTimerDisplay();
+        }
+
+        // Save settings to localStorage
+        function saveSettings() {
+            localStorage.setItem('math24_difficulty', currentDifficulty);
+            localStorage.setItem('math24_timer', timerEnabled);
+        }
+
+        // Load history from localStorage and restore stats
+        function loadHistory() {
+            const savedHistory = localStorage.getItem('math24_history');
+            if (savedHistory) {
+                gameHistory = JSON.parse(savedHistory);
+                
+                // Restore stats from history
+                calculateStatsFromHistory();
+            }
+        }
+
+        // Calculate score, streak, solved from history
+        function calculateStatsFromHistory() {
+            // Calculate total score
+            score = gameHistory.reduce((sum, item) => sum + (item.score || 0), 0);
+            
+            // Calculate total solved (correct answers)
+            solved = gameHistory.filter(item => item.correct).length;
+            
+            // Calculate current streak (consecutive correct answers from most recent)
+            streak = 0;
+            for (const item of gameHistory) {
+                if (item.correct) {
+                    streak++;
+                } else {
+                    break;
+                }
+            }
+            
+            // Update display
+            updateScore();
+        }
+
+        // Save history to localStorage
+        function saveHistory() {
+            localStorage.setItem('math24_history', JSON.stringify(gameHistory));
+        }
+
+        // Update operator buttons based on difficulty
+        function updateOperatorButtons() {
+            const allowedOps = operatorsByDifficulty[currentDifficulty];
+            const allOps = ['+', '-', '×', '÷'];
+            
+            allOps.forEach(op => {
+                const btn = document.querySelector(`.operator-btn[data-op="${op}"]`);
+                if (btn) {
+                    if (allowedOps.includes(op)) {
+                        btn.classList.remove('disabled');
+                    } else {
+                        btn.classList.add('disabled');
+                    }
+                }
+            });
+        }
+
+        // Initialize particles
+        function createParticles() {
+            const container = document.getElementById('particles');
+            const colors = ['#FF6B6B', '#4ECDC4', '#FFE66D', '#95E1D3', '#F38181', '#AA96DA'];
+            
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.width = Math.random() * 30 + 10 + 'px';
+                particle.style.height = particle.style.width;
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.animationDelay = Math.random() * 20 + 's';
+                particle.style.animationDuration = (15 + Math.random() * 10) + 's';
+                container.appendChild(particle);
+            }
+        }
+
+        // Generate random numbers with guaranteed solution based on difficulty
+        function generateNumbers() {
+            let numbers;
+            let attempts = 0;
+            const maxAttempts = 200;
+            
+            do {
+                numbers = [];
+                for (let i = 0; i < 4; i++) {
+                    numbers.push(Math.floor(Math.random() * 9) + 1);
+                }
+                solutions = findAllSolutions(numbers, currentDifficulty);
+                attempts++;
+            } while (solutions.length === 0 && attempts < maxAttempts);
+            
+            // If no solution found, use a known solvable set
+            if (solutions.length === 0) {
+                const solvableSets = {
+                    easy: [
+                        [1, 2, 3, 6],
+                        [1, 2, 4, 5],
+                        [2, 3, 4, 6],
+                        [1, 3, 5, 7],
+                        [2, 2, 4, 8]
+                    ],
+                    medium: [
+                        [2, 3, 4, 6],
+                        [1, 3, 4, 6],
+                        [2, 3, 5, 10],
+                        [1, 4, 5, 6],
+                        [3, 4, 6, 8]
+                    ],
+                    hard: [
+                        [3, 3, 8, 8],
+                        [4, 4, 10, 10],
+                        [1, 5, 5, 5],
+                        [2, 7, 8, 9],
+                        [3, 3, 7, 7]
+                    ]
+                };
+                
+                const sets = solvableSets[currentDifficulty] || solvableSets.hard;
+                numbers = sets[Math.floor(Math.random() * sets.length)];
+                solutions = findAllSolutions(numbers, currentDifficulty);
+            }
+            
+            return numbers;
+        }
+
+        // Find all possible solutions based on difficulty
+        function findAllSolutions(numbers, difficulty) {
+            const solutions = [];
+            const allowedOps = operatorsByDifficulty[difficulty];
+            const jsOps = allowedOps.map(op => op === '×' ? '*' : op === '÷' ? '/' : op);
+            
+            // Generate all permutations
+            const permutations = getPermutations(numbers);
+            
+            for (const perm of permutations) {
+                // Try all allowed operator combinations
+                for (const op1 of jsOps) {
+                    for (const op2 of jsOps) {
+                        for (const op3 of jsOps) {
+                            // Different parenthesizations
+                            const patterns = [
+                                `(${perm[0]} ${op1} ${perm[1]}) ${op2} (${perm[2]} ${op3} ${perm[3]})`,
+                                `((${perm[0]} ${op1} ${perm[1]}) ${op2} ${perm[2]}) ${op3} ${perm[3]}`,
+                                `${perm[0]} ${op1} ((${perm[1]} ${op2} ${perm[2]}) ${op3} ${perm[3]})`,
+                                `${perm[0]} ${op1} (${perm[1]} ${op2} (${perm[2]} ${op3} ${perm[3]}))`,
+                                `(${perm[0]} ${op1} (${perm[1]} ${op2} ${perm[2]})) ${op3} ${perm[3]}`
+                            ];
+                            
+                            for (const pattern of patterns) {
+                                try {
+                                    const result = evaluateExpression(pattern);
+                                    
+                                    if (Math.abs(result - 24) < 0.0001) {
+                                        // Format for display
+                                        const displayPattern = pattern
+                                            .replace(/\*/g, '×')
+                                            .replace(/\//g, '÷');
+                                        
+                                        // Check if this solution is unique enough
+                                        const isUnique = !solutions.some(s => 
+                                            normalizeExpression(s) === normalizeExpression(displayPattern)
+                                        );
+                                        
+                                        if (isUnique) {
+                                            solutions.push(displayPattern);
+                                        }
+                                    }
+                                } catch (e) {
+                                    // Division by zero or other errors, skip
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return solutions.slice(0, 5);
+        }
+
+        // Normalize expression for comparison
+        function normalizeExpression(expr) {
+            return expr.replace(/[\s()]/g, '').split('').sort().join('');
+        }
+
+        // Get all permutations of an array
+        function getPermutations(arr) {
+            if (arr.length <= 1) return [arr];
+            const result = [];
+            
+            for (let i = 0; i < arr.length; i++) {
+                const rest = [...arr.slice(0, i), ...arr.slice(i + 1)];
+                const perms = getPermutations(rest);
+                
+                for (const perm of perms) {
+                    result.push([arr[i], ...perm]);
+                }
+            }
+            
+            return result;
+        }
+
+        // Evaluate expression safely
+        function evaluateExpression(expr) {
+            // Clean and validate expression
+            const cleanExpr = expr.replace(/[^0-9+\-*/.()\s]/g, '');
+            return Function('"use strict"; return (' + cleanExpr + ')')();
+        }
+
+        // Render cards
+        function renderCards() {
+            const container = document.getElementById('cardsContainer');
+            container.innerHTML = '';
+            
+            currentNumbers.forEach((num, index) => {
+                const card = document.createElement('div');
+                card.className = `card ${cardColors[index % cardColors.length]}`;
+                card.dataset.index = index;
+                card.dataset.value = num;
+                
+                // Card corners
+                const topCorner = document.createElement('span');
+                topCorner.className = 'card-corner top';
+                topCorner.textContent = num;
+                
+                const bottomCorner = document.createElement('span');
+                bottomCorner.className = 'card-corner bottom';
+                bottomCorner.textContent = num;
+                
+                card.innerHTML = num;
+                card.appendChild(topCorner);
+                card.appendChild(bottomCorner);
+                
+                card.onclick = () => selectCard(index);
+                container.appendChild(card);
+            });
+        }
+
+        // Select a card
+        function selectCard(index) {
+            if (usedCards.has(index)) return;
+            
+            const card = document.querySelector(`.card[data-index="${index}"]`);
+            
+            if (card.classList.contains('selected')) {
+                // Deselect
+                card.classList.remove('selected');
+                const value = currentNumbers[index];
+                const lastIndex = currentExpression.lastIndexOf(value.toString());
+                if (lastIndex !== -1) {
+                    currentExpression.splice(lastIndex, 1);
+                }
+            } else {
+                // Select
+                card.classList.add('selected');
+                currentExpression.push(currentNumbers[index].toString());
+                
+                // Auto-close parentheses if needed
+                autoCloseParentheses();
+            }
+            
+            updateExpressionDisplay();
+        }
+
+        // Auto-close parentheses
+        function autoCloseParentheses() {
+            const openCount = currentExpression.filter(x => x === '(').length;
+            const closeCount = currentExpression.filter(x => x === ')').length;
+            
+            // If we just added a number and there are unmatched opening parentheses, close one
+            if (openCount > closeCount) {
+                const lastToken = currentExpression[currentExpression.length - 1];
+                if (!isNaN(lastToken)) {
+                    // Check if next token should be an operator or closing parenthesis
+                    const numCount = currentExpression.filter(x => !isNaN(x)).length;
+                    if (numCount >= 2) {
+                        // Add closing parenthesis
+                        // currentExpression.push(')');
+                    }
+                }
+            }
+        }
+
+        // Add operator
+        function addOperator(op) {
+            const allowedOps = operatorsByDifficulty[currentDifficulty];
+            const checkOp = op === '×' ? '*' : op === '÷' ? '/' : op;
+            
+            // Check if operator is allowed in current difficulty
+            if (['+', '-', '×', '÷'].includes(op) && !allowedOps.includes(op)) {
+                showModal('⛔ 不可用', `在${getDifficultyName(currentDifficulty)}模式下，不能使用"${op}"运算符！`);
+                return;
+            }
+            
+            currentExpression.push(op);
+            updateExpressionDisplay();
+        }
+
+        // Get difficulty name
+        function getDifficultyName(difficulty) {
+            const names = {
+                easy: '轻松',
+                medium: '稍难',
+                hard: '挑战'
+            };
+            return names[difficulty] || difficulty;
+        }
+
+        // Check and auto-upgrade difficulty based on total correct answers
+        function checkAutoUpgrade() {
+            const totalCorrect = gameHistory.filter(h => h.correct).length;
+            
+            let newDifficulty = currentDifficulty;
+            if (totalCorrect >= 20 && currentDifficulty !== 'hard') {
+                newDifficulty = 'hard';
+            } else if (totalCorrect >= 10 && currentDifficulty === 'easy') {
+                newDifficulty = 'medium';
+            }
+            
+            if (newDifficulty !== currentDifficulty) {
+                currentDifficulty = newDifficulty;
+                saveSettings();
+                updateOperatorButtons();
+                updateDifficultyBadge();
+                
+                // Show upgrade notification
+                setTimeout(() => {
+                    showModal('🎉 难度升级！', 
+                        `<div class="solution-step" style="background: linear-gradient(145deg, #d4fc79 0%, #96e6a1 100%);">
+                            <strong>恭喜你！</strong><br>
+                            你已经累计答对 ${totalCorrect} 题，<br>
+                            自动升级为 <strong>${getDifficultyName(currentDifficulty)}</strong> 模式！
+                        </div>
+                        <p>新的挑战等着你，继续加油！💪</p>`
+                    );
+                }, 500);
+            }
+        }
+
+        // Update expression display
+        function updateExpressionDisplay() {
+            const display = document.getElementById('expressionDisplay');
+            const deleteBtn = document.getElementById('deleteBtn');
+            
+            if (currentExpression.length === 0) {
+                display.innerHTML = '<span class="placeholder">点击数字和运算符开始游戏...</span><button class="delete-btn hidden" id="deleteBtn" onclick="deleteLastChar()" title="删除">⌫</button>';
+            } else {
+                display.innerHTML = currentExpression.join(' ') + '<button class="delete-btn" id="deleteBtn" onclick="deleteLastChar()" title="删除">⌫</button>';
+            }
+        }
+
+        // Delete last character
+        function deleteLastChar() {
+            if (currentExpression.length === 0) return;
+            
+            const removed = currentExpression.pop();
+            
+            // If removed item was a number, deselect the corresponding card
+            const numIndex = currentNumbers.indexOf(parseInt(removed));
+            if (numIndex !== -1) {
+                const card = document.querySelector(`.card[data-index="${numIndex}"]`);
+                if (card) {
+                    card.classList.remove('selected');
+                }
+            }
+            
+            updateExpressionDisplay();
+        }
+
+        // Clear expression
+        function clearExpression() {
+            currentExpression = [];
+            usedCards.clear();
+            document.querySelectorAll('.card').forEach(card => {
+                card.classList.remove('selected', 'used');
+            });
+            updateExpressionDisplay();
+        }
+
+        // Check answer
+        function checkAnswer() {
+            if (currentExpression.length === 0) {
+                showModal('⚠️ 请先输入算式', '点击数字和运算符来组成算式，目标是得到24！');
+                return;
+            }
+            
+            const expr = currentExpression.join('');
+            
+            // Check if all numbers are used exactly once
+            const usedNumbers = currentExpression.filter(x => /^\d+$/.test(x)).map(Number);
+            const sortedCurrent = [...currentNumbers].sort((a, b) => a - b);
+            const sortedUsed = [...usedNumbers].sort((a, b) => a - b);
+            
+            if (JSON.stringify(sortedCurrent) !== JSON.stringify(sortedUsed)) {
+                showModal('⚠️ 必须使用所有数字', '请使用给出的4个数字，每个数字只能用一次！');
+                return;
+            }
+            
+            try {
+                // Convert display operators to JavaScript operators
+                const evalExpr = expr.replace(/×/g, '*').replace(/÷/g, '/');
+                
+                // Validate expression format
+                const openParens = (evalExpr.match(/\(/g) || []).length;
+                const closeParens = (evalExpr.match(/\)/g) || []).length;
+                
+                if (openParens !== closeParens) {
+                    showModal('❌ 括号不匹配', `左括号有${openParens}个，右括号有${closeParens}个，请检查！`);
+                    return;
+                }
+                
+                // Check for invalid patterns
+                if (/[\+\-\*\/]{2,}/.test(evalExpr)) {
+                    showModal('❌ 算式格式错误', '运算符不能连续使用！');
+                    return;
+                }
+                
+                const result = evaluateExpression(evalExpr);
+                
+                // Check if result is valid number
+                if (isNaN(result) || !isFinite(result)) {
+                    showModal('❌ 计算错误', '算式计算结果无效，请检查是否有除以零等错误！');
+                    return;
+                }
+                
+                const isCorrect = Math.abs(result - 24) < 0.0001;
+                
+                // Add to history
+                addToHistory(isCorrect, expr, result);
+                
+                if (isCorrect) {
+                    score += getDifficultyScore();
+                    streak++;
+                    solved++;
+                    updateScore();
+                    showConfetti();
+                    showSuccessAnimation();
+                    
+                    // Check for auto-upgrade after delay
+                    setTimeout(() => {
+                        checkAutoUpgrade();
+                    }, 2000);
+                    
+                    setTimeout(() => {
+                        showModal('🎉 恭喜你答对了！', 
+                            `<div class="solution-step">
+                                <strong>你的答案：</strong><br>
+                                <div class="formula">${expr} = 24</div>
+                            </div>
+                            <p>太棒了！继续挑战下一题吧！</p>`
+                        );
+                    }, 1500);
+                } else {
+                    streak = 0;
+                    updateScore();
+                    showModal('❌ 答案不正确', 
+                        `<p>你得到的答案是 <strong>${result.toFixed(2)}</strong>，不是24。</p>
+                        <p>再试一次，或者点击"提示"按钮获取帮助！</p>`
+                    );
+                }
+            } catch (e) {
+                showModal('❌ 算式有误', '请检查你的算式格式是否正确，确保括号成对出现，且没有除以零的情况。');
+            }
+        }
+
+        // Add to history
+        function addToHistory(isCorrect, expression, result) {
+            const historyItem = {
+                date: new Date().toISOString(),
+                numbers: [...currentNumbers],
+                difficulty: currentDifficulty,
+                expression: expression,
+                result: result,
+                correct: isCorrect,
+                score: isCorrect ? getDifficultyScore() : 0
+            };
+            
+            gameHistory.unshift(historyItem);
+            
+            // Keep only last 50 records
+            if (gameHistory.length > 50) {
+                gameHistory = gameHistory.slice(0, 50);
+            }
+            
+            saveHistory();
+        }
+
+        // Get score based on difficulty
+        function getDifficultyScore() {
+            switch (currentDifficulty) {
+                case 'easy': return 10;
+                case 'medium': return 20;
+                case 'hard': return 30;
+                default: return 10;
+            }
+        }
+
+        // Update score display
+        function updateScore() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('streak').textContent = streak;
+            document.getElementById('solved').textContent = solved;
+        }
+
+        // Show hint
+        function showHint() {
+            if (solutions.length === 0) {
+                showModal('💡 提示', '抱歉，这道题没有解法。点击"新问题"换一题吧！');
+                return;
+            }
+            
+            const solution = solutions[0];
+            const hint = generateHint(solution);
+            
+            showModal('💡 提示', 
+                `<span class="hint-badge">小提示</span>
+                <p>${hint}</p>
+                <p style="margin-top: 15px; color: #7f8c8d; font-size: 0.9rem;">
+                    💡 提示次数有限，建议先自己思考一下哦！
+                </p>`
+            );
+        }
+
+        // Generate a helpful hint
+        function generateHint(solution) {
+            const numbers = currentNumbers;
+            const allowedOps = operatorsByDifficulty[currentDifficulty];
+            
+            if (solution.includes('×') && allowedOps.includes('×')) {
+                if (solution.includes('+') && allowedOps.includes('+')) {
+                    return '试试用乘法得到一个接近24的数，然后用加法调整！';
+                } else if (solution.includes('-') && allowedOps.includes('-')) {
+                    return '试试用乘法得到一个比24大的数，然后用减法调整！';
+                }
+                return '试试找两个数相乘，再和其他数字组合！';
+            } else if (solution.includes('÷') && allowedOps.includes('÷')) {
+                return '试试用除法简化某个数字！';
+            } else {
+                for (let i = 0; i < numbers.length; i++) {
+                    for (let j = i + 1; j < numbers.length; j++) {
+                        const sum = numbers[i] + numbers[j];
+                        const diff = Math.abs(numbers[i] - numbers[j]);
+                        
+                        if (sum === 6 || sum === 8 || sum === 12 || sum === 24) {
+                            return `试试先把 ${numbers[i]} 和 ${numbers[j]} 相加得到 ${sum}！`;
+                        } else if (diff === 1 || diff === 2 || diff === 3) {
+                            return `试试先把 ${numbers[i]} 和 ${numbers[j]} 相减！`;
+                        }
+                    }
+                }
+                
+                return '试试不同的数字组合方式，或者点击"教我"看详细解答！';
+            }
+        }
+
+        // Show teach (detailed solution)
+        function showTeach() {
+            if (solutions.length === 0) {
+                showModal('📖 解答', '抱歉，这道题没有解法。点击"新问题"换一题吧！');
+                return;
+            }
+            
+            const solution = solutions[0];
+            const explanation = generateDetailedExplanation(solution);
+            
+            showModal('📖 详细解答', explanation);
+            
+            // Reduce streak for using teach
+            if (streak > 0) {
+                streak = Math.max(0, streak - 1);
+                updateScore();
+            }
+        }
+
+        // Generate detailed explanation
+        function generateDetailedExplanation(solution) {
+            const allowedOps = operatorsByDifficulty[currentDifficulty];
+            let html = '<h3>🎯 解题思路</h3>';
+            
+            html += '<div class="solution-step">';
+            html += '<strong>当前难度：</strong>' + getDifficultyName(currentDifficulty);
+            html += '<br><strong>可用运算符：</strong>' + allowedOps.join('、');
+            html += '</div>';
+            
+            html += '<div class="solution-step">';
+            html += '<strong>第一步：</strong>观察这四个数字：' + currentNumbers.join('、');
+            html += '</div>';
+            
+            html += '<div class="solution-step">';
+            html += '<strong>第二步：</strong>思考如何得到24。<br>';
+            if (allowedOps.includes('×')) {
+                html += '常见方法：3×8=24、4×6=24、2×12=24、1×24=24<br>';
+            }
+            html += '也可以用加减法组合：比如 20+4=24、25-1=24';
+            html += '</div>';
+            
+            html += '<div class="solution-step">';
+            html += '<strong>第三步：</strong>尝试组合数字，找到答案！';
+            html += '</div>';
+            
+            html += '<h3>✨ 正确答案</h3>';
+            html += '<div class="formula">' + solution + ' = 24</div>';
+            
+            if (solutions.length > 1) {
+                html += '<h3>🎨 其他解法</h3>';
+                html += '<p>这道题还有多种解法：</p>';
+                for (let i = 1; i < Math.min(solutions.length, 3); i++) {
+                    html += '<div class="formula">' + solutions[i] + ' = 24</div>';
+                }
+            }
+            
+            html += '<div class="solution-step" style="margin-top: 20px; background: linear-gradient(145deg, #d4fc79 0%, #96e6a1 100%);">';
+            html += '<strong>💪 继续加油！</strong><br>';
+            html += '理解了这道题，试着用自己的话解释一遍，印象会更深刻哦！';
+            html += '</div>';
+            
+            return html;
+        }
+
+        // Show modal
+        function showModal(title, content) {
+            document.getElementById('modalTitle').innerHTML = title;
+            document.getElementById('modalContent').innerHTML = content;
+            document.getElementById('modal').classList.add('active');
+        }
+
+        // Close modal
+        function closeModal(event) {
+            if (!event || event.target === document.getElementById('modal') || event.target.classList.contains('close-btn')) {
+                document.getElementById('modal').classList.remove('active');
+            }
+        }
+
+        // Open custom question dialog
+        function openCustomQuestion() {
+            const html = `
+                <div class="setting-item">
+                    <div class="setting-label">🎯 输入4个数字（1-9）</div>
+                    <div style="display: flex; gap: 10px; justify-content: center; margin: 15px 0;">
+                        <input type="number" id="customNum1" min="1" max="9" value="1" style="width: 60px; height: 60px; text-align: center; font-size: 1.5rem; border: 2px solid #ddd; border-radius: 10px;">
+                        <input type="number" id="customNum2" min="1" max="9" value="2" style="width: 60px; height: 60px; text-align: center; font-size: 1.5rem; border: 2px solid #ddd; border-radius: 10px;">
+                        <input type="number" id="customNum3" min="1" max="9" value="3" style="width: 60px; height: 60px; text-align: center; font-size: 1.5rem; border: 2px solid #ddd; border-radius: 10px;">
+                        <input type="number" id="customNum4" min="1" max="9" value="4" style="width: 60px; height: 60px; text-align: center; font-size: 1.5rem; border: 2px solid #ddd; border-radius: 10px;">
+                    </div>
+                    <p style="color: #7f8c8d; font-size: 0.85rem; text-align: center;">输入4个1-9之间的数字，让小伙伴来解答吧！</p>
+                </div>
+                <button class="close-btn" onclick="startCustomQuestion()">开始出题</button>
+            `;
+            
+            showModal('❓ 我问你', html);
+            
+            // Auto-focus first input after modal opens
+            setTimeout(() => {
+                document.getElementById('customNum1')?.focus();
+            }, 100);
+        }
+
+        // Start custom question
+        function startCustomQuestion() {
+            const n1 = parseInt(document.getElementById('customNum1').value) || 1;
+            const n2 = parseInt(document.getElementById('customNum2').value) || 1;
+            const n3 = parseInt(document.getElementById('customNum3').value) || 1;
+            const n4 = parseInt(document.getElementById('customNum4').value) || 1;
+            
+            // Validate inputs
+            const nums = [n1, n2, n3, n4].map(n => Math.max(1, Math.min(9, n)));
+            
+            // Check if solution exists
+            const customSolutions = findAllSolutions(nums, currentDifficulty);
+            
+            currentNumbers = nums;
+            solutions = customSolutions;
+            
+            renderCards();
+            clearExpression();
+            resetTimer();
+            if (timerEnabled) {
+                startTimer();
+            }
+            
+            closeModal();
+            
+            // Show notification
+            if (customSolutions.length > 0) {
+                showModal('✅ 出题成功！', 
+                    `<p>你的题目是：<strong>${nums.join(', ')}</strong></p>
+                    <p>这道题有解法，快来挑战吧！</p>`
+                );
+            } else {
+                showModal('⚠️ 注意', 
+                    `<p>你的题目是：<strong>${nums.join(', ')}</strong></p>
+                    <p style="color: #e74c3c;">这道题在当前难度下可能无解，建议换一组数字试试！</p>
+                    <p><small>提示：不同难度可用的运算符不同</small></p>`
+                );
+            }
+        }
+
+        // Open settings
+        function openSettings() {
+            const totalCorrect = gameHistory.filter(h => h.correct).length;
+            const nextUpgrade = totalCorrect < 10 ? 10 : (totalCorrect < 20 ? 20 : '已达最高');
+            
+            const html = `
+                <div class="setting-item">
+                    <div class="setting-label">🎮 难度等级</div>
+                    <div class="difficulty-options">
+                        <div class="difficulty-option easy ${currentDifficulty === 'easy' ? 'active' : ''}" onclick="selectDifficulty('easy')">
+                            🌟 轻松<br><small>+ -</small>
+                        </div>
+                        <div class="difficulty-option medium ${currentDifficulty === 'medium' ? 'active' : ''}" onclick="selectDifficulty('medium')">
+                            🔥 稍难<br><small>+ - ×</small>
+                        </div>
+                        <div class="difficulty-option hard ${currentDifficulty === 'hard' ? 'active' : ''}" onclick="selectDifficulty('hard')">
+                            👑 挑战<br><small>+ - × ÷</small>
+                        </div>
+                    </div>
+                    <p style="color: #7f8c8d; font-size: 0.8rem; margin-top: 8px; text-align: center;">
+                        💡 累计答对${totalCorrect}题，再答对${nextUpgrade === '已达最高' ? '0' : nextUpgrade - totalCorrect}题自动升级
+                    </p>
+                </div>
+                
+                <div class="setting-item">
+                    <div class="toggle-switch ${timerEnabled ? 'active' : ''}" onclick="toggleTimer()">
+                        <div class="setting-label">⏱️ 倒计时</div>
+                        <div class="toggle-slider"></div>
+                    </div>
+                </div>
+                
+                <div class="setting-item">
+                    <div class="setting-label">📊 答题记录</div>
+                    <div id="historyList">
+                        ${renderHistoryList()}
+                    </div>
+                    ${gameHistory.length > 0 ? `<button class="danger-btn" onclick="clearHistory()">🗑️ 清除记录</button>` : ''}
+                </div>
+                
+                <div class="setting-item" style="background: linear-gradient(145deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <div class="setting-label" style="color: white; justify-content: center;">📱 关于</div>
+                    <div style="text-align: center; font-size: 0.9rem;">
+                        <p style="margin: 5px 0;"><strong>数学游戏24点</strong></p>
+                        <p style="margin: 5px 0; opacity: 0.9;">版本 V1.0</p>
+                        <p style="margin: 5px 0; opacity: 0.9;">2026.2.18</p>
+                        <p style="margin: 8px 0 0 0; font-size: 0.8rem; opacity: 0.8;">Roy和爸爸联合AI开发 ❤️</p>
+                    </div>
+                </div>
+            `;
+            
+            showModal('⚙️ 设置', html);
+        }
+
+        // Select difficulty from settings
+        function selectDifficulty(difficulty) {
+            currentDifficulty = difficulty;
+            saveSettings();
+            updateOperatorButtons();
+            updateDifficultyBadge();
+            
+            // Update UI in modal
+            document.querySelectorAll('.difficulty-option').forEach(opt => {
+                opt.classList.remove('active');
+            });
+            document.querySelector(`.difficulty-option.${difficulty}`)?.classList.add('active');
+            
+            // Regenerate question with new difficulty
+            newQuestion();
+        }
+
+        // Update difficulty badge display
+        function updateDifficultyBadge() {
+            const badge = document.getElementById('difficultyBadge');
+            if (badge) {
+                const names = {
+                    easy: '🌟 轻松模式',
+                    medium: '🔥 稍难模式', 
+                    hard: '👑 挑战模式'
+                };
+                badge.textContent = names[currentDifficulty] || '🎮 轻松模式';
+                badge.className = `difficulty-badge ${currentDifficulty}`;
+            }
+        }
+
+        // Toggle timer
+        function toggleTimer() {
+            timerEnabled = !timerEnabled;
+            saveSettings();
+            
+            const toggle = document.querySelector('.toggle-switch');
+            toggle.classList.toggle('active');
+            
+            updateTimerDisplay();
+        }
+
+        // Update timer display
+        function updateTimerDisplay() {
+            const timerEl = document.getElementById('timer');
+            if (timerEnabled) {
+                timerEl.classList.add('show');
+            } else {
+                timerEl.classList.remove('show');
+            }
+        }
+
+        // Render history list
+        function renderHistoryList() {
+            if (gameHistory.length === 0) {
+                return '<div class="empty-history">暂无答题记录</div>';
+            }
+            
+            const recentHistory = gameHistory.slice(0, 10);
+            let html = '';
+            
+            recentHistory.forEach(item => {
+                const date = new Date(item.date);
+                const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+                
+                html += `
+                    <div class="history-item ${item.correct ? 'correct' : 'wrong'}">
+                        <div class="history-date">${dateStr}</div>
+                        <div class="history-info">
+                            <div class="history-numbers">${item.numbers.join(' ')}</div>
+                            <div class="history-result">${item.expression} = ${item.result.toFixed(1)}</div>
+                        </div>
+                        <div class="history-score">${item.correct ? '+' + item.score : '❌'}</div>
+                    </div>
+                `;
+            });
+            
+            return html;
+        }
+
+        // Clear history
+        function clearHistory() {
+            if (confirm('确定要清除所有答题记录吗？得分、连续正确、已答题目数等数据也将重置为0。此操作不可恢复。')) {
+                gameHistory = [];
+                saveHistory();
+                
+                // Reset all stats
+                score = 0;
+                streak = 0;
+                solved = 0;
+                updateScore();
+                
+                // Reset difficulty to easy
+                currentDifficulty = 'easy';
+                saveSettings();
+                updateOperatorButtons();
+                updateDifficultyBadge();
+                
+                // Refresh settings modal
+                document.getElementById('historyList').innerHTML = renderHistoryList();
+                
+                // Remove clear button
+                const clearBtn = document.querySelector('.danger-btn');
+                if (clearBtn) clearBtn.remove();
+                
+                // Show confirmation
+                showModal('✅ 已清除', '所有答题记录和统计数据已重置，难度已恢复为轻松模式。');
+            }
+        }
+
+        // New question
+        function newQuestion() {
+            currentNumbers = generateNumbers();
+            renderCards();
+            clearExpression();
+            resetTimer();
+            if (timerEnabled) {
+                startTimer();
+            }
+        }
+
+        // Timer functions
+        function startTimer() {
+            stopTimer();
+            seconds = 0;
+            timerInterval = setInterval(() => {
+                seconds++;
+                updateTimerText();
+                
+                if (seconds === 60) {
+                    document.getElementById('timer').classList.add('warning');
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function resetTimer() {
+            stopTimer();
+            seconds = 0;
+            document.getElementById('timer').classList.remove('warning');
+            updateTimerText();
+        }
+
+        function updateTimerText() {
+            const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const secs = (seconds % 60).toString().padStart(2, '0');
+            document.getElementById('timer').textContent = `⏱️ ${mins}:${secs}`;
+        }
+
+        // Confetti animation
+        function showConfetti() {
+            const colors = ['#FF6B6B', '#4ECDC4', '#FFE66D', '#95E1D3', '#F38181', '#AA96DA', '#FCBAD3', '#FFFFD2'];
+            
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.animation = `confetti-fall ${1 + Math.random()}s ease-out forwards`;
+                    confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+                    confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+                    document.body.appendChild(confetti);
+                    
+                    setTimeout(() => confetti.remove(), 2000);
+                }, i * 30);
+            }
+        }
+
+        // Success animation
+        function showSuccessAnimation() {
+            const emoji = document.getElementById('successAnimation');
+            const emojis = ['🎉', '🎊', '🏆', '⭐', '🌟', '✨', '💯', '🎈'];
+            emoji.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            emoji.classList.add('show');
+            
+            setTimeout(() => {
+                emoji.classList.remove('show');
+            }, 1500);
+        }
+
+        // Keyboard support
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('modal').classList.contains('active')) {
+                if (e.key === 'Escape') {
+                    closeModal();
+                }
+                return;
+            }
+            
+            const allowedOps = operatorsByDifficulty[currentDifficulty];
+            
+            if (e.key >= '1' && e.key <= '9') {
+                const num = parseInt(e.key);
+                const index = currentNumbers.indexOf(num);
+                if (index !== -1 && !usedCards.has(index)) {
+                    selectCard(index);
+                }
+            } else if (e.key === '+' || e.key === '-' || e.key === '(' || e.key === ')') {
+                addOperator(e.key);
+            } else if ((e.key === '*' || e.key === 'x' || e.key === 'X') && allowedOps.includes('×')) {
+                addOperator('×');
+            } else if ((e.key === '/' || e.key === '÷') && allowedOps.includes('÷')) {
+                addOperator('÷');
+            } else if (e.key === 'Enter') {
+                checkAnswer();
+            } else if (e.key === 'Backspace') {
+                deleteLastChar();
+            } else if (e.key === 'Escape') {
+                clearExpression();
+            } else if (e.key === 'n' || e.key === 'N') {
+                newQuestion();
+            }
+        });
+
+        // Initialize
+        window.onload = () => {
+            createParticles();
+            loadSettings();
+            loadHistory();
+            updateOperatorButtons();
+            updateDifficultyBadge();
+            newQuestion();
+        };
+
+        // Prevent double-tap zoom on mobile
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', (e) => {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+    </script>
+</body>
+</html>

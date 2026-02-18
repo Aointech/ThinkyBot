@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>赛车躲避游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .game-container {
+            text-align: center;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #e94560;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            letter-spacing: 2px;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .info-item {
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .info-item span {
+            color: #00ff88;
+            margin-left: 10px;
+        }
+
+        #gameCanvas {
+            border: 4px solid #e94560;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(233, 69, 96, 0.3);
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+        }
+
+        .controls {
+            margin-top: 20px;
+            color: #fff;
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+
+        .controls kbd {
+            background: #e94560;
+            padding: 5px 15px;
+            border-radius: 5px;
+            margin: 0 5px;
+            font-weight: bold;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 40px 60px;
+            border-radius: 20px;
+            text-align: center;
+            border: 3px solid #e94560;
+            box-shadow: 0 0 50px rgba(233, 69, 96, 0.5);
+            z-index: 100;
+        }
+
+        .overlay h2 {
+            color: #e94560;
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+
+        .overlay p {
+            color: #fff;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        .overlay .score {
+            color: #00ff88;
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .overlay button {
+            background: linear-gradient(45deg, #e94560, #ff6b6b);
+            color: #fff;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.3rem;
+            border-radius: 25px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .overlay button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(233, 69, 96, 0.8);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .speed-boost {
+            animation: pulse 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🚗 赛车躲避游戏 🚗</h1>
+        
+        <div class="game-info">
+            <div class="info-item">分数: <span id="score">0</span></div>
+            <div class="info-item">金币: <span id="coinScore">0</span></div>
+            <div class="info-item">速度: <span id="speed">1x</span></div>
+            <div class="info-item">等级: <span id="level">1</span></div>
+        </div>
+
+        <canvas id="gameCanvas" width="400" height="600"></canvas>
+
+        <div class="controls">
+            使用 <kbd>←</kbd> <kbd>→</kbd> 键控制赛车左右移动
+        </div>
+
+        <div id="startOverlay" class="overlay">
+            <h2>准备开始</h2>
+            <p>躲避障碍，获得高分！</p>
+            <p>每躲避一个障碍 +10 分</p>
+            <p>每 100 分速度提升（固定增加初始速度的25%）</p>
+            <p>收集金币 +5 分</p>
+            <button onclick="startGame()">开始游戏</button>
+        </div>
+
+        <div id="gameOverOverlay" class="overlay hidden">
+            <h2>游戏结束</h2>
+            <p>障碍分数: <span id="finalObstacleScore">0</span></p>
+            <p>金币分数: <span id="finalCoinScore">0</span></p>
+            <p>总分</p>
+            <div class="score" id="finalScore">0</div>
+            <p>最高纪录: <span id="highScore">0</span></p>
+            <button onclick="startGame()">再来一局</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 游戏状态
+        let gameRunning = false;
+        let score = 0;
+        let baseSpeed = 3;
+        let currentSpeed = baseSpeed;
+        let highScore = localStorage.getItem('racingHighScore') || 0;
+
+        // 赛车配置
+        const car = {
+            x: 0, // 将在init()中设置
+            y: 500,
+            width: 50,
+            height: 80,
+            color: '#00ff88',
+            currentLane: 1, // 初始在第2个车道（0-3）
+            targetX: 0 // 目标位置，用于平滑移动
+        };
+
+        // 障碍物数组
+        let obstacles = [];
+
+        // 金币数组
+        let coins = [];
+        let coinScore = 0;
+
+        // 道路配置
+        const roadWidth = 300;
+        const roadX = (canvas.width - roadWidth) / 2;
+        const laneCount = 4;
+        const laneWidth = roadWidth / laneCount;
+
+        // 道路标线偏移
+        let roadOffset = 0;
+
+        // 障碍物颜色
+        const obstacleColors = ['#e94560', '#ff6b6b', '#feca57', '#ff9ff3', '#54a0ff'];
+
+        // 绘制道路
+        function drawRoad() {
+            // 路面
+            ctx.fillStyle = '#2d3436';
+            ctx.fillRect(roadX, 0, roadWidth, canvas.height);
+
+            // 道路边缘线
+            ctx.strokeStyle = '#e94560';
+            ctx.lineWidth = 4;
+            ctx.setLineDash([]);
+            
+            // 左边线
+            ctx.beginPath();
+            ctx.moveTo(roadX, 0);
+            ctx.lineTo(roadX, canvas.height);
+            ctx.stroke();
+
+            // 右边线
+            ctx.beginPath();
+            ctx.moveTo(roadX + roadWidth, 0);
+            ctx.lineTo(roadX + roadWidth, canvas.height);
+            ctx.stroke();
+
+            // 车道分隔线
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([20, 20]);
+
+            for (let i = 1; i < laneCount; i++) {
+                const x = roadX + i * laneWidth;
+                ctx.beginPath();
+                ctx.moveTo(x, roadOffset % 40);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+
+            ctx.setLineDash([]);
+
+            // 道路渐变效果
+            const gradient = ctx.createLinearGradient(roadX, 0, roadX + roadWidth, 0);
+            gradient.addColorStop(0, 'rgba(0, 0, 0, 0.3)');
+            gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.05)');
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0.3)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(roadX, 0, roadWidth, canvas.height);
+        }
+
+        // 绘制赛车
+        function drawCar() {
+            // 车身
+            ctx.fillStyle = car.color;
+            ctx.beginPath();
+            ctx.roundRect(car.x, car.y, car.width, car.height, 8);
+            ctx.fill();
+
+            // 车身光泽
+            const gradient = ctx.createLinearGradient(car.x, car.y, car.x + car.width, car.y);
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+            gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0)');
+            gradient.addColorStop(1, 'rgba(255, 255, 255, 0.2)');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.roundRect(car.x, car.y, car.width, car.height, 8);
+            ctx.fill();
+
+            // 挡风玻璃
+            ctx.fillStyle = '#1a1a2e';
+            ctx.beginPath();
+            ctx.roundRect(car.x + 8, car.y + 15, car.width - 16, 20, 4);
+            ctx.fill();
+
+            // 窗户反光
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.beginPath();
+            ctx.roundRect(car.x + 10, car.y + 17, car.width / 3, 15, 3);
+            ctx.fill();
+
+            // 后窗
+            ctx.fillStyle = '#1a1a2e';
+            ctx.beginPath();
+            ctx.roundRect(car.x + 10, car.y + 50, car.width - 20, 12, 3);
+            ctx.fill();
+
+            // 车轮
+            ctx.fillStyle = '#2d3436';
+            // 左前轮
+            ctx.fillRect(car.x - 5, car.y + 10, 8, 20);
+            // 右前轮
+            ctx.fillRect(car.x + car.width - 3, car.y + 10, 8, 20);
+            // 左后轮
+            ctx.fillRect(car.x - 5, car.y + 50, 8, 20);
+            // 右后轮
+            ctx.fillRect(car.x + car.width - 3, car.y + 50, 8, 20);
+
+            // 车灯
+            ctx.fillStyle = '#feca57';
+            ctx.beginPath();
+            ctx.roundRect(car.x + 5, car.y + 2, 12, 5, 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.roundRect(car.x + car.width - 17, car.y + 2, 12, 5, 2);
+            ctx.fill();
+
+            // 尾灯
+            ctx.fillStyle = '#e94560';
+            ctx.beginPath();
+            ctx.roundRect(car.x + 5, car.y + car.height - 5, 12, 5, 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.roundRect(car.x + car.width - 17, car.y + car.height - 5, 12, 5, 2);
+            ctx.fill();
+
+            // 车牌
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(car.x + 12, car.y + car.height - 12, car.width - 24, 8);
+            ctx.fillStyle = '#2d3436';
+            ctx.font = 'bold 6px Arial';
+            ctx.fillText('RACER', car.x + 15, car.y + car.height - 5);
+        }
+
+        // 绘制障碍物
+        function drawObstacle(obstacle) {
+            // 车身
+            ctx.fillStyle = obstacle.color;
+            ctx.beginPath();
+            ctx.roundRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height, 6);
+            ctx.fill();
+
+            // 车身光泽
+            const gradient = ctx.createLinearGradient(obstacle.x, obstacle.y, obstacle.x + obstacle.width, obstacle.y);
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+            gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0)');
+            gradient.addColorStop(1, 'rgba(255, 255, 255, 0.2)');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.roundRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height, 6);
+            ctx.fill();
+
+            // 挡风玻璃
+            ctx.fillStyle = '#1a1a2e';
+            ctx.beginPath();
+            ctx.roundRect(obstacle.x + 6, obstacle.y + 30, obstacle.width - 12, 15, 3);
+            ctx.fill();
+
+            // 后窗
+            ctx.fillStyle = '#1a1a2e';
+            ctx.beginPath();
+            ctx.roundRect(obstacle.x + 6, obstacle.y + 5, obstacle.width - 12, 10, 3);
+            ctx.fill();
+
+            // 车轮
+            ctx.fillStyle = '#2d3436';
+            ctx.fillRect(obstacle.x - 4, obstacle.y + 8, 6, 15);
+            ctx.fillRect(obstacle.x + obstacle.width - 2, obstacle.y + 8, 6, 15);
+            ctx.fillRect(obstacle.x - 4, obstacle.y + 35, 6, 15);
+            ctx.fillRect(obstacle.x + obstacle.width - 2, obstacle.y + 35, 6, 15);
+
+            // 车灯
+            ctx.fillStyle = '#ff6b6b';
+            ctx.beginPath();
+            ctx.roundRect(obstacle.x + 4, obstacle.y + obstacle.height - 4, 10, 4, 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.roundRect(obstacle.x + obstacle.width - 14, obstacle.y + obstacle.height - 4, 10, 4, 2);
+            ctx.fill();
+        }
+
+        // 创建障碍物
+        function createObstacle() {
+            // 获取所有被占用的车道（防止路被堵死）
+            const occupiedLanes = new Set();
+            obstacles.forEach(obs => {
+                if (obs.y < 150) { // 只考虑距离顶部150像素内的障碍物
+                    const lane = Math.round((obs.x - roadX) / laneWidth);
+                    occupiedLanes.add(lane);
+                    occupiedLanes.add(lane - 1); // 相邻车道也不能用
+                    occupiedLanes.add(lane + 1);
+                }
+            });
+
+            // 找出可用的车道
+            const availableLanes = [];
+            for (let i = 0; i < laneCount; i++) {
+                if (!occupiedLanes.has(i)) {
+                    availableLanes.push(i);
+                }
+            }
+
+            // 如果没有可用车道，不生成障碍物
+            if (availableLanes.length === 0) return;
+
+            // 随机选择一个可用车道
+            const lane = availableLanes[Math.floor(Math.random() * availableLanes.length)];
+            const x = roadX + lane * laneWidth + (laneWidth - 50) / 2;
+            const color = obstacleColors[Math.floor(Math.random() * obstacleColors.length)];
+            
+            obstacles.push({
+                x: x,
+                y: -60,
+                width: 50,
+                height: 70,
+                color: color,
+                passed: false
+            });
+        }
+
+        // 创建金币
+        function createCoin() {
+            // 获取被障碍物占用的车道
+            const occupiedLanes = new Set();
+            obstacles.forEach(obs => {
+                if (obs.y < 200) { // 考虑距离顶部200像素内的障碍物
+                    const lane = Math.round((obs.x - roadX) / laneWidth);
+                    occupiedLanes.add(lane);
+                }
+            });
+
+            // 获取已有金币的车道（避免同一车道太近）
+            coins.forEach(coin => {
+                if (coin.y < 200) {
+                    const lane = Math.round((coin.x - roadX) / laneWidth);
+                    occupiedLanes.add(lane);
+                }
+            });
+
+            // 找出可用的车道
+            const availableLanes = [];
+            for (let i = 0; i < laneCount; i++) {
+                if (!occupiedLanes.has(i)) {
+                    availableLanes.push(i);
+                }
+            }
+
+            // 如果没有可用车道，不生成金币
+            if (availableLanes.length === 0) return;
+
+            // 随机选择一个可用车道
+            const lane = availableLanes[Math.floor(Math.random() * availableLanes.length)];
+            const x = roadX + lane * laneWidth + laneWidth / 2;
+            
+            coins.push({
+                x: x,
+                y: -30,
+                radius: 12,
+                collected: false,
+                rotation: 0
+            });
+        }
+
+        // 绘制金币
+        function drawCoin(coin) {
+            ctx.save();
+            ctx.translate(coin.x, coin.y);
+            
+            // 金币外圈
+            ctx.beginPath();
+            ctx.arc(0, 0, coin.radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#FFD700';
+            ctx.fill();
+            ctx.strokeStyle = '#FFA500';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // 金币内圈（光泽效果）
+            ctx.beginPath();
+            ctx.arc(-3, -3, coin.radius - 5, 0, Math.PI * 2);
+            ctx.fillStyle = '#FFED4A';
+            ctx.fill();
+            
+            // 金币符号
+            ctx.fillStyle = '#B8860B';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('$', 0, 1);
+            
+            ctx.restore();
+        }
+
+        // 碰撞检测
+        function checkCollision(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.width &&
+                   rect1.x + rect1.width > rect2.x &&
+                   rect1.y < rect2.y + rect2.height &&
+                   rect1.y + rect1.height > rect2.y;
+        }
+
+        // 更新游戏状态
+        function update() {
+            if (!gameRunning) return;
+
+            // 更新赛车车道位置
+            const targetX = roadX + car.currentLane * laneWidth + (laneWidth - car.width) / 2;
+            
+            // 平滑移动到目标位置
+            const dx = targetX - car.x;
+            if (Math.abs(dx) > 2) {
+                car.x += dx * 0.2;
+            } else {
+                car.x = targetX;
+            }
+
+            // 更新道路标线
+            roadOffset += currentSpeed;
+
+            // 更新障碍物
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                obstacles[i].y += currentSpeed;
+
+                // 检测碰撞
+                if (checkCollision(car, obstacles[i])) {
+                    gameOver();
+                    return;
+                }
+
+                // 检测是否通过障碍物
+                if (!obstacles[i].passed && obstacles[i].y > car.y + car.height) {
+                    obstacles[i].passed = true;
+                    score += 10;
+                    updateScore();
+                    
+                    // 每100分提升速度（每次固定增加初始速度的25%）
+                    if (score % 100 === 0) {
+                        currentSpeed = baseSpeed + (baseSpeed * 0.25 * Math.floor(score / 100));
+                        showSpeedBoost();
+                    }
+                }
+
+                // 移除超出屏幕的障碍物
+                if (obstacles[i].y > canvas.height) {
+                    obstacles.splice(i, 1);
+                }
+            }
+
+            // 更新金币
+            for (let i = coins.length - 1; i >= 0; i--) {
+                coins[i].y += currentSpeed;
+
+                // 检测金币碰撞（圆形与矩形碰撞检测）
+                const coin = coins[i];
+                const carCenterX = car.x + car.width / 2;
+                const carCenterY = car.y + car.height / 2;
+                const dx = coin.x - carCenterX;
+                const dy = coin.y - carCenterY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                // 如果距离小于金币半径加上赛车半径的近似值，则收集金币
+                if (distance < coin.radius + Math.min(car.width, car.height) / 2) {
+                    coinScore += 5;
+                    updateScore();
+                    coins.splice(i, 1);
+                    continue;
+                }
+
+                // 移除超出屏幕的金币
+                if (coins[i].y > canvas.height) {
+                    coins.splice(i, 1);
+                }
+            }
+
+            // 随机生成新障碍物
+            if (Math.random() < 0.02 * (currentSpeed / baseSpeed)) {
+                createObstacle();
+            }
+
+            // 随机生成金币（概率比障碍物低）
+            if (Math.random() < 0.015) {
+                createCoin();
+            }
+        }
+
+        // 显示速度提升效果
+        function showSpeedBoost() {
+            const speedEl = document.getElementById('speed');
+            speedEl.classList.add('speed-boost');
+            setTimeout(() => speedEl.classList.remove('speed-boost'), 500);
+        }
+
+        // 更新分数显示
+        function updateScore() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('coinScore').textContent = coinScore;
+            document.getElementById('speed').textContent = (currentSpeed / baseSpeed).toFixed(1) + 'x';
+            document.getElementById('level').textContent = Math.floor(score / 100) + 1;
+        }
+
+        // 游戏循环
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            drawRoad();
+            
+            obstacles.forEach(drawObstacle);
+            coins.forEach(drawCoin);
+            drawCar();
+            
+            update();
+            
+            if (gameRunning) {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        // 开始游戏
+        function startGame() {
+            document.getElementById('startOverlay').classList.add('hidden');
+            document.getElementById('gameOverOverlay').classList.add('hidden');
+            
+            // 重置游戏状态
+            score = 0;
+            coinScore = 0;
+            currentSpeed = baseSpeed;
+            obstacles = [];
+            coins = [];
+            car.currentLane = 1; // 从第2个车道开始
+            car.x = roadX + car.currentLane * laneWidth + (laneWidth - car.width) / 2;
+            gameRunning = true;
+            
+            updateScore();
+            gameLoop();
+        }
+
+        // 游戏结束
+        function gameOver() {
+            gameRunning = false;
+            
+            const totalScore = score + coinScore;
+            
+            if (totalScore > highScore) {
+                highScore = totalScore;
+                localStorage.setItem('racingHighScore', highScore);
+            }
+            
+            document.getElementById('finalObstacleScore').textContent = score;
+            document.getElementById('finalCoinScore').textContent = coinScore;
+            document.getElementById('finalScore').textContent = totalScore;
+            document.getElementById('highScore').textContent = highScore;
+            document.getElementById('gameOverOverlay').classList.remove('hidden');
+        }
+
+        // 键盘事件监听 - 按一次键切换一个车道
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' && !e.repeat) {
+                if (car.currentLane > 0) {
+                    car.currentLane--;
+                }
+                e.preventDefault();
+            }
+            if (e.key === 'ArrowRight' && !e.repeat) {
+                if (car.currentLane < laneCount - 1) {
+                    car.currentLane++;
+                }
+                e.preventDefault();
+            }
+        });
+
+        // 初始化
+        function init() {
+            document.getElementById('highScore').textContent = highScore;
+            document.getElementById('coinScore').textContent = '0';
+            car.currentLane = 1;
+            car.x = roadX + car.currentLane * laneWidth + (laneWidth - car.width) / 2;
+            drawRoad();
+            drawCar();
+        }
+
+        init();
+    </script>
+</body>
+</html>
