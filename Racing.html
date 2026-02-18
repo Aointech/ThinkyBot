@@ -81,6 +81,7 @@
             max-width: 400px;
             display: flex;
             justify-content: center;
+            margin: 0 auto;
         }
 
         #gameCanvas {
@@ -110,6 +111,14 @@
             top: 0;
             width: 50%;
             height: 100%;
+            cursor: pointer;
+            /* 添加轻微的背景色以便用户知道可点击区域 */
+            background: rgba(255, 255, 255, 0.02);
+            transition: background 0.2s;
+        }
+
+        .touch-left:active, .touch-right:active {
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .touch-left {
@@ -120,9 +129,29 @@
             right: 0;
         }
 
+        /* 在手机上显示触摸控制 */
         @media (hover: none) and (pointer: coarse) {
             .touch-controls {
-                display: block;
+                display: block !important;
+            }
+            .mobile-hint {
+                display: block !important;
+            }
+            .controls {
+                display: none !important;
+            }
+        }
+
+        /* 小屏幕设备也显示触摸控制 */
+        @media (max-width: 768px) {
+            .touch-controls {
+                display: block !important;
+            }
+            .mobile-hint {
+                display: block !important;
+            }
+            .controls {
+                display: none !important;
             }
         }
 
@@ -147,15 +176,6 @@
             color: #fff;
             font-size: clamp(0.8rem, 3vw, 1rem);
             opacity: 0.8;
-        }
-
-        @media (hover: none) and (pointer: coarse) {
-            .controls {
-                display: none;
-            }
-            .mobile-hint {
-                display: block;
-            }
         }
 
         .overlay {
@@ -286,6 +306,13 @@
             
             canvas.style.width = (400 * scale) + 'px';
             canvas.style.height = (600 * scale) + 'px';
+            
+            // 确保触摸控制层始终覆盖整个画布区域
+            const touchControls = document.getElementById('touchControls');
+            if (touchControls) {
+                touchControls.style.width = canvas.style.width;
+                touchControls.style.height = canvas.style.height;
+            }
         }
         
         window.addEventListener('resize', resizeCanvas);
@@ -786,29 +813,67 @@
 
         // 触摸事件监听 - 支持移动端
         let touchStartX = 0;
+        let isTouching = false;
         
-        document.getElementById('touchLeft').addEventListener('touchstart', (e) => {
+        // 触摸控制函数
+        function handleTouchLeft(e) {
             e.preventDefault();
+            e.stopPropagation();
             if (gameRunning && car.currentLane > 0) {
                 car.currentLane--;
             }
-        }, { passive: false });
+            return false;
+        }
         
-        document.getElementById('touchRight').addEventListener('touchstart', (e) => {
+        function handleTouchRight(e) {
             e.preventDefault();
+            e.stopPropagation();
             if (gameRunning && car.currentLane < laneCount - 1) {
                 car.currentLane++;
             }
-        }, { passive: false });
+            return false;
+        }
         
-        // 支持点击控制（鼠标和触摸）
-        document.getElementById('touchLeft').addEventListener('mousedown', (e) => {
+        // 添加触摸事件监听器
+        const touchLeft = document.getElementById('touchLeft');
+        const touchRight = document.getElementById('touchRight');
+        
+        // 触摸事件
+        touchLeft.addEventListener('touchstart', handleTouchLeft, { passive: false });
+        touchLeft.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); }, { passive: false });
+        touchLeft.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
+        
+        touchRight.addEventListener('touchstart', handleTouchRight, { passive: false });
+        touchRight.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); }, { passive: false });
+        touchRight.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
+        
+        // 鼠标点击事件（桌面端测试用）
+        touchLeft.addEventListener('mousedown', (e) => {
+            e.preventDefault();
             if (gameRunning && car.currentLane > 0) {
                 car.currentLane--;
             }
         });
         
-        document.getElementById('touchRight').addEventListener('mousedown', (e) => {
+        touchRight.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            if (gameRunning && car.currentLane < laneCount - 1) {
+                car.currentLane++;
+            }
+        });
+        
+        // 点击事件作为备用
+        touchLeft.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (gameRunning && car.currentLane > 0) {
+                car.currentLane--;
+            }
+        });
+        
+        touchRight.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             if (gameRunning && car.currentLane < laneCount - 1) {
                 car.currentLane++;
             }
@@ -817,6 +882,13 @@
         // 防止触摸时页面滚动
         document.getElementById('gameCanvas').addEventListener('touchmove', (e) => {
             e.preventDefault();
+        }, { passive: false });
+        
+        // 在整个游戏区域防止默认触摸行为
+        document.querySelector('.game-container').addEventListener('touchmove', (e) => {
+            if (e.target.classList.contains('touch-left') || e.target.classList.contains('touch-right')) {
+                e.preventDefault();
+            }
         }, { passive: false });
 
         // 防止双击缩放
@@ -828,6 +900,16 @@
             }
             lastTouchEnd = now;
         }, false);
+        
+        // 强制显示触摸控制（调试用，也可用于确保功能正常）
+        function enableTouchControls() {
+            document.getElementById('touchControls').style.display = 'block';
+        }
+        
+        // 检测是否为触摸设备并启用触摸控制
+        if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+            enableTouchControls();
+        }
 
         // 初始化
         function init() {
@@ -838,6 +920,11 @@
             resizeCanvas();
             drawRoad();
             drawCar();
+            
+            // 确保触摸控制已启用
+            if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+                enableTouchControls();
+            }
         }
 
         init();
