@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>赛车躲避游戏</title>
+    <title>躲避反应练习</title>
     <style>
         * {
             margin: 0;
@@ -276,7 +276,7 @@
             <h2>准备开始</h2>
             <p>躲避障碍，获得高分！</p>
             <p>每躲避一个障碍 +10 分</p>
-            <p>每 100 分速度提升（固定增加初始速度的25%）</p>
+            <p>每 100 分速度提升（固定增加初始速度的10%）</p>
             <p>收集金币 +5 分</p>
             <button onclick="startGame()">开始游戏</button>
         </div>
@@ -676,9 +676,9 @@
                     score += 10;
                     updateScore();
                     
-                    // 每100分提升速度（每次固定增加初始速度的25%）
+                    // 每100分提升速度（每次固定增加初始速度的10%）
                     if (score % 100 === 0) {
-                        currentSpeed = baseSpeed + (baseSpeed * 0.25 * Math.floor(score / 100));
+                        currentSpeed = baseSpeed + (baseSpeed * 0.1 * Math.floor(score / 100));
                         showSpeedBoost();
                     }
                 }
