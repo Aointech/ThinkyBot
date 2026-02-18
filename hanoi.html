@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🗼 汉诺塔游戏</title>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --accent: #f093fb;
+            --success: #4ade80;
+            --warning: #fbbf24;
+            --danger: #f87171;
+            --dark: #1e293b;
+            --light: #f8fafc;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Nunito', 'ZCOOL KuaiLe', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            overflow-x: hidden;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: white;
+            font-size: clamp(2rem, 8vw, 3rem);
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: rgba(255,255,255,0.9);
+            font-size: clamp(0.9rem, 3vw, 1.2rem);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .controls {
+            background: rgba(255,255,255,0.95);
+            padding: 15px 25px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+
+        .disk-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .disk-selector label {
+            font-weight: 700;
+            color: var(--dark);
+        }
+
+        .disk-selector select {
+            padding: 8px 15px;
+            font-size: 1rem;
+            border: 2px solid var(--primary);
+            border-radius: 10px;
+            background: white;
+            font-family: inherit;
+            cursor: pointer;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #22c55e, var(--success));
+            color: white;
+            box-shadow: 0 4px 15px rgba(74, 222, 128, 0.4);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(74, 222, 128, 0.6);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, var(--warning), #f59e0b);
+            color: white;
+            box-shadow: 0 4px 15px rgba(251, 191, 36, 0.4);
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(251, 191, 36, 0.6);
+        }
+
+        .stats {
+            background: rgba(255,255,255,0.95);
+            padding: 15px 30px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: var(--dark);
+        }
+
+        .stat-value.moves {
+            color: var(--primary);
+        }
+
+        .stat-value.min {
+            color: var(--success);
+        }
+
+        .game-area {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 800px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+
+        .towers-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            min-height: 350px;
+            padding: 20px 10px;
+            position: relative;
+        }
+
+        .tower {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 120px;
+            flex: 1;
+            max-width: 200px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .tower:hover {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+        }
+
+        .tower.selected {
+            background: rgba(255,255,255,0.2);
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(255,255,255,0.3);
+        }
+
+        .tower-pole {
+            width: 12px;
+            height: 250px;
+            background: linear-gradient(90deg, #8B4513, #A0522D, #8B4513);
+            border-radius: 6px;
+            position: relative;
+            z-index: 1;
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .tower-base {
+            width: 100%;
+            max-width: 140px;
+            height: 20px;
+            background: linear-gradient(180deg, #8B4513, #654321);
+            border-radius: 10px;
+            margin-top: -5px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .disks-container {
+            position: absolute;
+            bottom: 25px;
+            display: flex;
+            flex-direction: column-reverse;
+            align-items: center;
+            width: 100%;
+            z-index: 2;
+        }
+
+        .disk {
+            height: 28px;
+            border-radius: 14px;
+            margin: 2px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+            cursor: grab;
+            user-select: none;
+        }
+
+        .disk:active {
+            cursor: grabbing;
+        }
+
+        .disk-1 { width: 50px; background: linear-gradient(135deg, #FF6B6B, #ee5a6a); }
+        .disk-2 { width: 70px; background: linear-gradient(135deg, #4ECDC4, #44a3a3); }
+        .disk-3 { width: 90px; background: linear-gradient(135deg, #FFE66D, #f5d547); color: #333; }
+        .disk-4 { width: 110px; background: linear-gradient(135deg, #95E1D3, #74c4a8); }
+        .disk-5 { width: 130px; background: linear-gradient(135deg, #F38181, #e85a5a); }
+        .disk-6 { width: 150px; background: linear-gradient(135deg, #AA96DA, #957dad); }
+        .disk-7 { width: 170px; background: linear-gradient(135deg, #FCBAD3, #f6a8c4); color: #333; }
+        .disk-8 { width: 190px; background: linear-gradient(135deg, #A8E6CF, #7dd3b2); }
+
+        .tower-label {
+            margin-top: 15px;
+            color: white;
+            font-weight: 700;
+            font-size: 1.2rem;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+        }
+
+        .message {
+            text-align: center;
+            margin-top: 15px;
+            min-height: 30px;
+        }
+
+        .message-text {
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+            animation: fadeIn 0.3s;
+        }
+
+        .message-text.success {
+            color: #4ade80;
+            font-size: 1.3rem;
+        }
+
+        .message-text.error {
+            color: #f87171;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .rules {
+            background: rgba(255,255,255,0.95);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+            max-width: 800px;
+            width: 100%;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+
+        .rules h3 {
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .rules p {
+            color: #475569;
+            line-height: 1.6;
+            margin: 5px 0;
+            font-size: 0.95rem;
+        }
+
+        .win-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .win-modal.show {
+            display: flex;
+            animation: fadeIn 0.3s;
+        }
+
+        .win-content {
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            padding: 40px 60px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            animation: popIn 0.5s;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .win-content h2 {
+            font-size: 2.5rem;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .win-content p {
+            font-size: 1.2rem;
+            color: #555;
+            margin: 10px 0;
+        }
+
+        .win-content .btn {
+            margin-top: 20px;
+        }
+
+        /* 自动演示时的磁盘动画 */
+        .disk.moving {
+            animation: diskMove 0.5s ease-in-out;
+        }
+
+        @keyframes diskMove {
+            0% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-50px) scale(1.05); }
+            100% { transform: translateY(0) scale(1); }
+        }
+
+        @media (max-width: 600px) {
+            .towers-container {
+                min-height: 280px;
+                padding: 10px 5px;
+            }
+
+            .tower-pole {
+                height: 200px;
+            }
+
+            .disks-container {
+                bottom: 20px;
+            }
+
+            .disk {
+                height: 22px;
+                font-size: 0.75rem;
+            }
+
+            .disk-1 { width: 40px; }
+            .disk-2 { width: 55px; }
+            .disk-3 { width: 70px; }
+            .disk-4 { width: 85px; }
+            .disk-5 { width: 100px; }
+            .disk-6 { width: 115px; }
+            .disk-7 { width: 130px; }
+            .disk-8 { width: 145px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗼 汉诺塔游戏</h1>
+        <p class="subtitle">移动所有盘子到右边柱子，大盘子不能压在小盘子上！</p>
+
+        <div class="controls">
+            <div class="disk-selector">
+                <label>🎯 难度选择：</label>
+                <select id="diskCount" onchange="initGame()">
+                    <option value="3">3个盘子 (练习)</option>
+                    <option value="4" selected>4个盘子 (简单)</option>
+                    <option value="5">5个盘子 (中等)</option>
+                    <option value="6">6个盘子 (困难)</option>
+                    <option value="7">7个盘子 (挑战)</option>
+                    <option value="8">8个盘子 (大师)</option>
+                </select>
+            </div>
+            <button class="btn btn-warning" onclick="resetGame()">🔄 重新开始</button>
+            <button class="btn btn-success" onclick="autoSolve()">🎬 自动演示</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-label">移动次数</div>
+                <div class="stat-value moves" id="moveCount">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">最少需要</div>
+                <div class="stat-value min" id="minMoves">15</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">耗时</div>
+                <div class="stat-value" id="timer">00:00</div>
+            </div>
+        </div>
+
+        <div class="game-area">
+            <div class="towers-container" id="towersContainer">
+                <div class="tower" id="tower-0" onclick="handleTowerClick(0)">
+                    <div class="disks-container" id="tower0-disks"></div>
+                    <div class="tower-pole"></div>
+                    <div class="tower-base"></div>
+                    <div class="tower-label">A 柱</div>
+                </div>
+                <div class="tower" id="tower-1" onclick="handleTowerClick(1)">
+                    <div class="disks-container" id="tower1-disks"></div>
+                    <div class="tower-pole"></div>
+                    <div class="tower-base"></div>
+                    <div class="tower-label">B 柱</div>
+                </div>
+                <div class="tower" id="tower-2" onclick="handleTowerClick(2)">
+                    <div class="disks-container" id="tower2-disks"></div>
+                    <div class="tower-pole"></div>
+                    <div class="tower-base"></div>
+                    <div class="tower-label">C 柱</div>
+                </div>
+            </div>
+            <div class="message">
+                <div class="message-text" id="message">👆 点击柱子选择盘子，再点击目标柱子移动</div>
+            </div>
+        </div>
+
+        <div class="rules">
+            <h3>📖 游戏规则</h3>
+            <p>1️⃣ 每次只能移动一个盘子</p>
+            <p>2️⃣ 大盘子不能放在小盘子上</p>
+            <p>3️⃣ 目标：把所有盘子从 A 柱移动到 C 柱</p>
+            <p>💡 提示：n 个盘子最少需要 2ⁿ-1 步（如 4 个盘子最少 15 步）</p>
+        </div>
+    </div>
+
+    <div class="win-modal" id="winModal">
+        <div class="win-content">
+            <h2>🎉 恭喜通关！</h2>
+            <p>你用 <span id="finalMoves">0</span> 步完成了挑战！</p>
+            <p id="optimalText">太棒了！是最优解法！</p>
+            <p>⏱️ 用时：<span id="finalTime">00:00</span></p>
+            <button class="btn btn-primary" onclick="closeWinModal()">再玩一次</button>
+        </div>
+    </div>
+
+    <script>
+        // 游戏状态
+        let towers = [[], [], []];
+        let selectedTower = null;
+        let moveCount = 0;
+        let diskCount = 4;
+        let startTime = null;
+        let timerInterval = null;
+        let isAutoSolving = false;
+
+        // 颜色数组
+        const diskColors = [
+            'linear-gradient(135deg, #FF6B6B, #ee5a6a)',
+            'linear-gradient(135deg, #4ECDC4, #44a3a3)',
+            'linear-gradient(135deg, #FFE66D, #f5d547)',
+            'linear-gradient(135deg, #95E1D3, #74c4a8)',
+            'linear-gradient(135deg, #F38181, #e85a5a)',
+            'linear-gradient(135deg, #AA96DA, #957dad)',
+            'linear-gradient(135deg, #FCBAD3, #f6a8c4)',
+            'linear-gradient(135deg, #A8E6CF, #7dd3b2)'
+        ];
+
+        // 初始化游戏
+        function initGame() {
+            diskCount = parseInt(document.getElementById('diskCount').value);
+            resetGame();
+        }
+
+        // 重置游戏
+        function resetGame() {
+            towers = [[], [], []];
+            selectedTower = null;
+            moveCount = 0;
+            isAutoSolving = false;
+            
+            // 初始化盘子（大的在下面，小的在上面）
+            for (let i = diskCount; i >= 1; i--) {
+                towers[0].push(i);
+            }
+            
+            updateDisplay();
+            updateStats();
+            clearSelection();
+            showMessage('👆 点击柱子选择盘子，再点击目标柱子移动');
+            
+            // 重置计时器
+            startTime = Date.now();
+            clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 1000);
+            updateTimer();
+        }
+
+        // 更新显示
+        function updateDisplay() {
+            for (let i = 0; i < 3; i++) {
+                const container = document.getElementById(`tower${i}-disks`);
+                container.innerHTML = '';
+                
+                towers[i].forEach((diskSize, index) => {
+                    const disk = document.createElement('div');
+                    disk.className = `disk disk-${diskSize}`;
+                    disk.textContent = diskSize;
+                    disk.style.background = diskColors[diskSize - 1];
+                    disk.style.color = diskSize === 3 || diskSize === 7 ? '#333' : 'white';
+                    container.appendChild(disk);
+                });
+            }
+        }
+
+        // 更新统计
+        function updateStats() {
+            document.getElementById('moveCount').textContent = moveCount;
+            document.getElementById('minMoves').textContent = Math.pow(2, diskCount) - 1;
+        }
+
+        // 更新计时器
+        function updateTimer() {
+            if (!startTime) return;
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+            const seconds = (elapsed % 60).toString().padStart(2, '0');
+            document.getElementById('timer').textContent = `${minutes}:${seconds}`;
+        }
+
+        // 处理柱子点击
+        function handleTowerClick(towerIndex) {
+            if (isAutoSolving) return;
+            
+            if (selectedTower === null) {
+                // 选择源柱子
+                if (towers[towerIndex].length === 0) {
+                    showMessage('❌ 这根柱子没有盘子！', 'error');
+                    return;
+                }
+                selectedTower = towerIndex;
+                highlightTower(towerIndex, true);
+                showMessage(`✅ 已选择 ${['A', 'B', 'C'][towerIndex]} 柱，点击目标柱子移动`);
+            } else if (selectedTower === towerIndex) {
+                // 取消选择
+                selectedTower = null;
+                clearSelection();
+                showMessage('👆 已取消选择，点击柱子重新开始');
+            } else {
+                // 尝试移动
+                if (tryMove(selectedTower, towerIndex)) {
+                    moveCount++;
+                    updateStats();
+                    updateDisplay();
+                    
+                    if (checkWin()) {
+                        handleWin();
+                    } else {
+                        showMessage(`✅ 已将盘子从 ${['A', 'B', 'C'][selectedTower]} 柱移动到 ${['A', 'B', 'C'][towerIndex]} 柱`);
+                    }
+                    
+                    selectedTower = null;
+                    clearSelection();
+                }
+            }
+        }
+
+        // 尝试移动盘子
+        function tryMove(from, to) {
+            const sourceTower = towers[from];
+            const targetTower = towers[to];
+            const disk = sourceTower[sourceTower.length - 1];
+            
+            // 检查是否可以移动
+            if (targetTower.length > 0) {
+                const topDisk = targetTower[targetTower.length - 1];
+                if (disk > topDisk) {
+                    showMessage('❌ 大盘子不能放在小盘子上！', 'error');
+                    return false;
+                }
+            }
+            
+            // 执行移动
+            sourceTower.pop();
+            targetTower.push(disk);
+            return true;
+        }
+
+        // 高亮柱子
+        function highlightTower(index, selected) {
+            document.querySelectorAll('.tower').forEach((tower, i) => {
+                tower.classList.toggle('selected', i === index && selected);
+            });
+        }
+
+        // 清除选择
+        function clearSelection() {
+            document.querySelectorAll('.tower').forEach(tower => {
+                tower.classList.remove('selected');
+            });
+        }
+
+        // 显示消息
+        function showMessage(text, type = '') {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = text;
+            messageEl.className = 'message-text ' + type;
+        }
+
+        // 检查是否获胜
+        function checkWin() {
+            return towers[2].length === diskCount;
+        }
+
+        // 处理获胜
+        function handleWin() {
+            clearInterval(timerInterval);
+            const minMoves = Math.pow(2, diskCount) - 1;
+            const isOptimal = moveCount === minMoves;
+            
+            document.getElementById('finalMoves').textContent = moveCount;
+            document.getElementById('finalTime').textContent = document.getElementById('timer').textContent;
+            document.getElementById('optimalText').textContent = isOptimal ? 
+                '🏆 太棒了！你用了最少步数！' : 
+                `💡 最少需要 ${minMoves} 步，你还能做得更好！`;
+            document.getElementById('optimalText').style.color = isOptimal ? '#22c55e' : '#f59e0b';
+            
+            setTimeout(() => {
+                document.getElementById('winModal').classList.add('show');
+            }, 500);
+        }
+
+        // 关闭获胜弹窗
+        function closeWinModal() {
+            document.getElementById('winModal').classList.remove('show');
+            resetGame();
+        }
+
+        // 自动演示（递归解法）
+        async function autoSolve() {
+            if (isAutoSolving) return;
+            isAutoSolving = true;
+            
+            // 重置游戏
+            resetGame();
+            showMessage('🎬 正在自动演示最优解法...');
+            
+            // 等待一下让用户看到初始状态
+            await sleep(800);
+            
+            // 执行递归解法
+            await hanoi(diskCount, 0, 2, 1);
+            
+            isAutoSolving = false;
+            showMessage('✅ 自动演示完成！');
+        }
+
+        // 汉诺塔递归算法
+        async function hanoi(n, from, to, aux) {
+            if (n <= 0) return;
+            
+            // 将 n-1 个盘子从 from 移动到 aux
+            await hanoi(n - 1, from, aux, to);
+            
+            // 将第 n 个盘子从 from 移动到 to
+            await moveDisk(from, to);
+            
+            // 将 n-1 个盘子从 aux 移动到 to
+            await hanoi(n - 1, aux, to, from);
+        }
+
+        // 移动盘子（带动画）
+        async function moveDisk(from, to) {
+            // 执行移动
+            const disk = towers[from].pop();
+            towers[to].push(disk);
+            
+            moveCount++;
+            updateStats();
+            updateDisplay();
+            
+            // 添加移动动画效果
+            const disks = document.querySelectorAll(`#tower${to}-disks .disk`);
+            if (disks.length > 0) {
+                const lastDisk = disks[disks.length - 1];
+                lastDisk.classList.add('moving');
+                setTimeout(() => lastDisk.classList.remove('moving'), 500);
+            }
+            
+            // 延迟以便观察
+            await sleep(600);
+        }
+
+        // 睡眠函数
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // 初始化
+        resetGame();
+    </script>
+</body>
+</html>

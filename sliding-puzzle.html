@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🔲 数字华容道</title>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --accent: #f093fb;
+            --success: #4ade80;
+            --warning: #fbbf24;
+            --danger: #f87171;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --tile-bg: #ffffff;
+            --tile-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Nunito', 'ZCOOL KuaiLe', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: white;
+            font-size: clamp(2rem, 8vw, 3rem);
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: rgba(255,255,255,0.9);
+            font-size: clamp(0.9rem, 3vw, 1.2rem);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .controls {
+            background: rgba(255,255,255,0.95);
+            padding: 15px 25px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            width: 100%;
+        }
+
+        .difficulty-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .difficulty-selector label {
+            font-weight: 700;
+            color: var(--dark);
+            font-size: 0.95rem;
+        }
+
+        .difficulty-selector select {
+            padding: 8px 15px;
+            font-size: 1rem;
+            border: 2px solid var(--primary);
+            border-radius: 10px;
+            background: white;
+            font-family: inherit;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #22c55e, var(--success));
+            color: white;
+            box-shadow: 0 4px 15px rgba(74, 222, 128, 0.4);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(74, 222, 128, 0.6);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, var(--warning), #f59e0b);
+            color: white;
+            box-shadow: 0 4px 15px rgba(251, 191, 36, 0.4);
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(251, 191, 36, 0.6);
+        }
+
+        .stats {
+            background: rgba(255,255,255,0.95);
+            padding: 15px 30px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            width: 100%;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: var(--dark);
+        }
+
+        .game-board {
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        .grid-container {
+            display: grid;
+            gap: 8px;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 15px;
+            position: relative;
+        }
+
+        .tile {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: var(--dark);
+            cursor: pointer;
+            box-shadow: 
+                0 4px 6px rgba(0,0,0,0.1),
+                0 1px 3px rgba(0,0,0,0.08),
+                inset 0 1px 0 rgba(255,255,255,0.8);
+            transition: all 0.15s ease;
+            user-select: none;
+            position: relative;
+        }
+
+        .tile:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 6px 12px rgba(0,0,0,0.15),
+                0 2px 4px rgba(0,0,0,0.1),
+                inset 0 1px 0 rgba(255,255,255,0.8);
+        }
+
+        .tile:active {
+            transform: translateY(0);
+            box-shadow: 
+                0 2px 4px rgba(0,0,0,0.1),
+                inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .tile.empty {
+            background: transparent;
+            box-shadow: none;
+            cursor: default;
+        }
+
+        .tile.empty:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .tile.correct {
+            background: linear-gradient(145deg, #dcfce7, #bbf7d0);
+            color: #166534;
+        }
+
+        .tile.moving {
+            animation: tileMove 0.2s ease;
+        }
+
+        @keyframes tileMove {
+            0% { transform: scale(0.95); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        .message {
+            text-align: center;
+            margin-top: 15px;
+            min-height: 30px;
+        }
+
+        .message-text {
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+        }
+
+        .message-text.success {
+            color: #4ade80;
+            font-size: 1.3rem;
+            animation: bounce 0.5s;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .rules {
+            background: rgba(255,255,255,0.95);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+
+        .rules h3 {
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .rules p {
+            color: #475569;
+            line-height: 1.6;
+            margin: 5px 0;
+            font-size: 0.95rem;
+        }
+
+        .win-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .win-modal.show {
+            display: flex;
+            animation: fadeIn 0.3s;
+        }
+
+        .win-content {
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            padding: 40px 60px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            animation: popIn 0.5s;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .win-content h2 {
+            font-size: 2.5rem;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .win-content p {
+            font-size: 1.2rem;
+            color: #555;
+            margin: 10px 0;
+        }
+
+        .win-content .btn {
+            margin-top: 20px;
+        }
+
+        /* 难度特定样式 */
+        .grid-3 { grid-template-columns: repeat(3, 1fr); }
+        .grid-4 { grid-template-columns: repeat(4, 1fr); }
+        .grid-5 { grid-template-columns: repeat(5, 1fr); }
+
+        .grid-3 .tile { 
+            width: 90px; 
+            height: 90px; 
+            font-size: 2.2rem;
+        }
+
+        .grid-5 .tile { 
+            width: 55px; 
+            height: 55px; 
+            font-size: 1.4rem;
+        }
+
+        @media (max-width: 500px) {
+            .grid-3 .tile { 
+                width: 75px; 
+                height: 75px; 
+                font-size: 1.8rem;
+            }
+            .grid-4 .tile { 
+                width: 60px; 
+                height: 60px; 
+                font-size: 1.5rem;
+            }
+            .grid-5 .tile { 
+                width: 45px; 
+                height: 45px; 
+                font-size: 1.2rem;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .grid-3 .tile { 
+                width: 65px; 
+                height: 65px; 
+                font-size: 1.5rem;
+            }
+            .grid-4 .tile { 
+                width: 50px; 
+                height: 50px; 
+                font-size: 1.3rem;
+            }
+            .grid-5 .tile { 
+                width: 38px; 
+                height: 38px; 
+                font-size: 1rem;
+            }
+        }
+
+        .hint-btn {
+            background: linear-gradient(135deg, #3b82f6, #60a5fa);
+            color: white;
+        }
+
+        .hint-btn:hover {
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+        }
+
+        .hint-text {
+            color: #fbbf24;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔲 数字华容道</h1>
+        <p class="subtitle">把打乱的数字按顺序排列，挑战你的空间思维！</p>
+
+        <div class="controls">
+            <div class="difficulty-selector">
+                <label>🎯 难度：</label>
+                <select id="gridSize" onchange="initGame()">
+                    <option value="3">3×3 (入门)</option>
+                    <option value="4" selected>4×4 (标准)</option>
+                    <option value="5">5×5 (困难)</option>
+                </select>
+            </div>
+            <button class="btn btn-warning" onclick="shuffleBoard()">🔀 重新打乱</button>
+            <button class="btn btn-success" onclick="showHint()">💡 提示</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-label">步数</div>
+                <div class="stat-value" id="moveCount">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">用时</div>
+                <div class="stat-value" id="timer">00:00</div>
+            </div>
+        </div>
+
+        <div class="game-board">
+            <div class="grid-container grid-4" id="gridContainer">
+                <!-- 格子会在这里生成 -->
+            </div>
+        </div>
+
+        <div class="message">
+            <div class="message-text" id="message">👆 点击数字方块移动</div>
+        </div>
+
+        <div class="rules">
+            <h3>📖 游戏规则</h3>
+            <p>1️⃣ 点击数字方块，如果旁边有空位就可以移动</p>
+            <p>2️⃣ 目标：把数字按 1、2、3... 顺序排列</p>
+            <p>3️⃣ 空白格应该在最后（右下角）</p>
+            <p>💡 提示：观察数字位置，规划移动路线</p>
+        </div>
+    </div>
+
+    <div class="win-modal" id="winModal">
+        <div class="win-content">
+            <h2>🎉 恭喜通关！</h2>
+            <p>你用 <span id="finalMoves">0</span> 步完成了挑战！</p>
+            <p>⏱️ 用时：<span id="finalTime">00:00</span></p>
+            <button class="btn btn-primary" onclick="closeWinModal()">再玩一次</button>
+        </div>
+    </div>
+
+    <script>
+        // 游戏状态
+        let gridSize = 4;
+        let board = [];
+        let moveCount = 0;
+        let startTime = null;
+        let timerInterval = null;
+        let isPlaying = false;
+
+        // 初始化游戏
+        function initGame() {
+            gridSize = parseInt(document.getElementById('gridSize').value);
+            const container = document.getElementById('gridContainer');
+            
+            // 更新网格样式
+            container.className = `grid-container grid-${gridSize}`;
+            
+            // 创建有序数组 [1, 2, ..., size*size-1, 0]
+            board = [];
+            for (let i = 1; i < gridSize * gridSize; i++) {
+                board.push(i);
+            }
+            board.push(0); // 0 表示空白格
+            
+            resetGame();
+        }
+
+        // 重置游戏
+        function resetGame() {
+            moveCount = 0;
+            updateStats();
+            showMessage('👆 点击数字方块移动，按顺序排列 1 到 ' + (gridSize * gridSize - 1));
+            
+            // 重置计时器
+            clearInterval(timerInterval);
+            startTime = null;
+            document.getElementById('timer').textContent = '00:00';
+            
+            // 初始显示有序状态
+            renderBoard();
+            
+            // 延迟后打乱
+            setTimeout(() => {
+                shuffleBoard();
+            }, 500);
+        }
+
+        // 打乱棋盘（确保可解）
+        function shuffleBoard() {
+            // 从完成状态开始，随机移动若干步
+            // 这样保证生成的谜题一定有解
+            let shuffleMoves = gridSize * 25; // 打乱步数
+            let lastMove = -1;
+            
+            let shuffleInterval = setInterval(() => {
+                const emptyIndex = board.indexOf(0);
+                const neighbors = getNeighbors(emptyIndex);
+                
+                // 避免立即回退
+                let validNeighbors = neighbors.filter(n => n !== lastMove);
+                if (validNeighbors.length === 0) {
+                    validNeighbors = neighbors;
+                }
+                
+                const randomNeighbor = validNeighbors[Math.floor(Math.random() * validNeighbors.length)];
+                swapTiles(emptyIndex, randomNeighbor, false);
+                lastMove = emptyIndex;
+                
+                shuffleMoves--;
+                if (shuffleMoves <= 0) {
+                    clearInterval(shuffleInterval);
+                    isPlaying = true;
+                    startTime = Date.now();
+                    timerInterval = setInterval(updateTimer, 1000);
+                    showMessage('🎮 开始！把数字按顺序排列');
+                }
+            }, 20);
+        }
+
+        // 获取邻居索引
+        function getNeighbors(index) {
+            const neighbors = [];
+            const row = Math.floor(index / gridSize);
+            const col = index % gridSize;
+            
+            // 上
+            if (row > 0) neighbors.push(index - gridSize);
+            // 下
+            if (row < gridSize - 1) neighbors.push(index + gridSize);
+            // 左
+            if (col > 0) neighbors.push(index - 1);
+            // 右
+            if (col < gridSize - 1) neighbors.push(index + 1);
+            
+            return neighbors;
+        }
+
+        // 渲染棋盘
+        function renderBoard() {
+            const container = document.getElementById('gridContainer');
+            container.innerHTML = '';
+            
+            board.forEach((num, index) => {
+                const tile = document.createElement('div');
+                tile.className = 'tile';
+                
+                if (num === 0) {
+                    tile.classList.add('empty');
+                } else {
+                    tile.textContent = num;
+                    tile.onclick = () => handleTileClick(index);
+                    
+                    // 检查是否在正确位置
+                    if (num === index + 1) {
+                        tile.classList.add('correct');
+                    }
+                }
+                
+                container.appendChild(tile);
+            });
+        }
+
+        // 处理格子点击
+        function handleTileClick(index) {
+            if (!isPlaying) return;
+            
+            const emptyIndex = board.indexOf(0);
+            const neighbors = getNeighbors(emptyIndex);
+            
+            if (neighbors.includes(index)) {
+                // 可以移动
+                swapTiles(index, emptyIndex, true);
+                
+                // 检查是否获胜
+                if (checkWin()) {
+                    handleWin();
+                } else {
+                    const correctCount = board.filter((num, idx) => num === idx + 1 && num !== 0).length;
+                    if (correctCount > 0) {
+                        showMessage(`✨ 已有 ${correctCount} 个数字在正确位置！继续加油！`);
+                    }
+                }
+            } else {
+                // 不能移动，显示提示
+                const tile = document.querySelectorAll('.tile')[index];
+                tile.style.animation = 'shake 0.3s';
+                setTimeout(() => {
+                    tile.style.animation = '';
+                }, 300);
+                showMessage('❌ 这个方块不能移动，只能移动到相邻的空位');
+            }
+        }
+
+        // 交换两个格子
+        function swapTiles(index1, index2, countMove = true) {
+            [board[index1], board[index2]] = [board[index2], board[index1]];
+            
+            if (countMove) {
+                moveCount++;
+                updateStats();
+            }
+            
+            renderBoard();
+        }
+
+        // 检查是否获胜
+        function checkWin() {
+            for (let i = 0; i < board.length - 1; i++) {
+                if (board[i] !== i + 1) {
+                    return false;
+                }
+            }
+            return board[board.length - 1] === 0;
+        }
+
+        // 处理获胜
+        function handleWin() {
+            isPlaying = false;
+            clearInterval(timerInterval);
+            
+            document.getElementById('finalMoves').textContent = moveCount;
+            document.getElementById('finalTime').textContent = document.getElementById('timer').textContent;
+            
+            showMessage('🎉 恭喜你完成了挑战！', 'success');
+            
+            setTimeout(() => {
+                document.getElementById('winModal').classList.add('show');
+            }, 500);
+        }
+
+        // 更新统计
+        function updateStats() {
+            document.getElementById('moveCount').textContent = moveCount;
+        }
+
+        // 更新计时器
+        function updateTimer() {
+            if (!startTime) return;
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+            const seconds = (elapsed % 60).toString().padStart(2, '0');
+            document.getElementById('timer').textContent = `${minutes}:${seconds}`;
+        }
+
+        // 显示消息
+        function showMessage(text, type = '') {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = text;
+            messageEl.className = 'message-text ' + type;
+        }
+
+        // 关闭获胜弹窗
+        function closeWinModal() {
+            document.getElementById('winModal').classList.remove('show');
+            resetGame();
+        }
+
+        // 显示提示
+        function showHint() {
+            if (!isPlaying) {
+                showMessage('🎮 先点击"重新打乱"开始游戏');
+                return;
+            }
+            
+            // 找到应该移动的数字
+            const emptyIndex = board.indexOf(0);
+            const neighbors = getNeighbors(emptyIndex);
+            
+            if (neighbors.length === 0) return;
+            
+            // 找出哪个邻居移动后能让某个数字到达正确位置
+            let bestMove = null;
+            let bestScore = -1;
+            
+            neighbors.forEach(neighborIndex => {
+                const num = board[neighborIndex];
+                const targetIndex = num - 1; // 数字应该在的位置
+                
+                // 计算移动后的收益
+                let score = 0;
+                
+                // 如果移动后该数字到达正确位置，加分
+                if (targetIndex === emptyIndex) {
+                    score += 10;
+                }
+                
+                // 距离正确位置更近加分
+                const currentDist = Math.abs(Math.floor(neighborIndex / gridSize) - Math.floor(targetIndex / gridSize)) +
+                                   Math.abs((neighborIndex % gridSize) - (targetIndex % gridSize));
+                const newDist = Math.abs(Math.floor(emptyIndex / gridSize) - Math.floor(targetIndex / gridSize)) +
+                               Math.abs((emptyIndex % gridSize) - (targetIndex % gridSize));
+                
+                if (newDist < currentDist) {
+                    score += 5;
+                }
+                
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMove = neighborIndex;
+                }
+            });
+            
+            if (bestMove !== null) {
+                const tiles = document.querySelectorAll('.tile');
+                tiles[bestMove].style.boxShadow = '0 0 20px #fbbf24, 0 0 40px #fbbf24';
+                showMessage('💡 提示：试着移动这个高亮的数字！');
+                
+                setTimeout(() => {
+                    tiles[bestMove].style.boxShadow = '';
+                }, 1500);
+            }
+        }
+
+        // 添加摇晃动画
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translateX(-5px); }
+                75% { transform: translateX(5px); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // 键盘支持
+        document.addEventListener('keydown', (e) => {
+            if (!isPlaying) return;
+            
+            const emptyIndex = board.indexOf(0);
+            const row = Math.floor(emptyIndex / gridSize);
+            const col = emptyIndex % gridSize;
+            
+            let targetIndex = -1;
+            
+            switch(e.key) {
+                case 'ArrowUp':
+                    if (row < gridSize - 1) targetIndex = emptyIndex + gridSize;
+                    break;
+                case 'ArrowDown':
+                    if (row > 0) targetIndex = emptyIndex - gridSize;
+                    break;
+                case 'ArrowLeft':
+                    if (col < gridSize - 1) targetIndex = emptyIndex + 1;
+                    break;
+                case 'ArrowRight':
+                    if (col > 0) targetIndex = emptyIndex - 1;
+                    break;
+            }
+            
+            if (targetIndex !== -1) {
+                e.preventDefault();
+                handleTileClick(targetIndex);
+            }
+        });
+
+        // 初始化
+        initGame();
+    </script>
+</body>
+</html>
