@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🗼 汉诺塔游戏</title>
+    <title>🗼 汉诺塔</title>
     <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -35,6 +35,12 @@
             align-items: center;
             padding: 10px;
             overflow-x: hidden;
+        }
+        .footer {
+            margin-top: 10px;
+            text-align: center;
+            color: rgba(255,255,255,0.8);
+            font-size: 0.9rem;
         }
 
         @keyframes gradientShift {
@@ -247,7 +253,7 @@
 
         .disks-container {
             position: absolute;
-            bottom: 25px;
+            bottom: 60px;
             display: flex;
             flex-direction: column-reverse;
             align-items: center;
@@ -436,15 +442,15 @@
 </head>
 <body>
     <div class="container">
-        <h1>🗼 汉诺塔游戏</h1>
-        <p class="subtitle">移动所有盘子到右边柱子，大盘子不能压在小盘子上！</p>
+        <h1>🗼 汉诺塔</h1>
+        <p class="subtitle">移动所有盘子到最右边柱子，大盘子不能压在小盘子上！</p>
 
         <div class="controls">
             <div class="disk-selector">
                 <label>🎯 难度选择：</label>
                 <select id="diskCount" onchange="initGame()">
-                    <option value="3">3个盘子 (练习)</option>
-                    <option value="4" selected>4个盘子 (简单)</option>
+                    <option value="3" selected>3个盘子 (练习)</option>
+                    <option value="4">4个盘子 (简单)</option>
                     <option value="5">5个盘子 (中等)</option>
                     <option value="6">6个盘子 (困难)</option>
                     <option value="7">7个盘子 (挑战)</option>
@@ -452,7 +458,7 @@
                 </select>
             </div>
             <button class="btn btn-warning" onclick="resetGame()">🔄 重新开始</button>
-            <button class="btn btn-success" onclick="autoSolve()">🎬 自动演示</button>
+            <button class="btn btn-success" id="demoBtn" onclick="stepDemo()">🎬 演示</button>
         </div>
 
         <div class="stats">
@@ -504,6 +510,11 @@
             <p>💡 提示：n 个盘子最少需要 2ⁿ-1 步（如 4 个盘子最少 15 步）</p>
         </div>
     </div>
+    <footer class="footer">
+        <hr>
+        <script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
+        <p>让学习变得有趣  |  Roy@2026  | 访问量 <span id="busuanzi_page_pv"></span> 次</p>
+    </footer>
 
     <div class="win-modal" id="winModal">
         <div class="win-content">
@@ -520,7 +531,7 @@
         let towers = [[], [], []];
         let selectedTower = null;
         let moveCount = 0;
-        let diskCount = 4;
+        let diskCount = 3;
         let startTime = null;
         let timerInterval = null;
         let isAutoSolving = false;
@@ -707,41 +718,80 @@
             resetGame();
         }
 
-        // 自动演示（递归解法）
-        async function autoSolve() {
-            if (isAutoSolving) return;
-            isAutoSolving = true;
-            
-            // 重置游戏
-            resetGame();
-            showMessage('🎬 正在自动演示最优解法...');
-            
-            // 等待一下让用户看到初始状态
-            await sleep(800);
-            
-            // 执行递归解法
-            await hanoi(diskCount, 0, 2, 1);
-            
-            isAutoSolving = false;
-            showMessage('✅ 自动演示完成！');
-        }
+        // 单步演示相关变量
+        let demoMoves = [];
+        let currentDemoIndex = 0;
+        let isDemoMode = false;
 
-        // 汉诺塔递归算法
-        async function hanoi(n, from, to, aux) {
+        // 生成移动序列
+        function generateDemoMoves(n, from, to, aux) {
             if (n <= 0) return;
             
             // 将 n-1 个盘子从 from 移动到 aux
-            await hanoi(n - 1, from, aux, to);
+            generateDemoMoves(n - 1, from, aux, to);
             
-            // 将第 n 个盘子从 from 移动到 to
-            await moveDisk(from, to);
+            // 记录第 n 个盘子的移动
+            demoMoves.push({from, to, disk: n});
             
             // 将 n-1 个盘子从 aux 移动到 to
-            await hanoi(n - 1, aux, to, from);
+            generateDemoMoves(n - 1, aux, to, from);
+        }
+
+        // 单步演示
+        function stepDemo() {
+            if (!isDemoMode) {
+                // 开始演示模式
+                isDemoMode = true;
+                demoMoves = [];
+                currentDemoIndex = 0;
+                
+                // 重置游戏
+                resetGame();
+                
+                // 生成移动序列
+                generateDemoMoves(diskCount, 0, 2, 1);
+                
+                showMessage(`🎬 演示模式：共 ${demoMoves.length} 步，点击按钮逐步移动`);
+                document.getElementById('demoBtn').textContent = '👉 下一步';
+                return;
+            }
+            
+            // 执行下一步
+            if (currentDemoIndex < demoMoves.length) {
+                const move = demoMoves[currentDemoIndex];
+                
+                // 检查是否可以移动
+                const sourceTower = towers[move.from];
+                const targetTower = towers[move.to];
+                const disk = sourceTower[sourceTower.length - 1];
+                
+                // 执行移动
+                sourceTower.pop();
+                targetTower.push(disk);
+                
+                moveCount++;
+                updateStats();
+                updateDisplay();
+                
+                currentDemoIndex++;
+                
+                const remaining = demoMoves.length - currentDemoIndex;
+                if (remaining > 0) {
+                    showMessage(`✅ 第 ${currentDemoIndex} 步完成，还剩 ${remaining} 步`);
+                } else {
+                    showMessage('🎉 演示完成！');
+                    document.getElementById('demoBtn').textContent = '🎬 演示';
+                    isDemoMode = false;
+                    
+                    if (checkWin()) {
+                        setTimeout(() => handleWin(), 300);
+                    }
+                }
+            }
         }
 
         // 移动盘子（带动画）
-        async function moveDisk(from, to) {
+        function moveDisk(from, to) {
             // 执行移动
             const disk = towers[from].pop();
             towers[to].push(disk);
@@ -757,9 +807,6 @@
                 lastDisk.classList.add('moving');
                 setTimeout(() => lastDisk.classList.remove('moving'), 500);
             }
-            
-            // 延迟以便观察
-            await sleep(600);
         }
 
         // 睡眠函数
@@ -769,6 +816,11 @@
 
         // 初始化
         resetGame();
+
+        // 重置演示模式
+        isDemoMode = false;
+        demoMoves = [];
+        currentDemoIndex = 0;
     </script>
 </body>
 </html>
