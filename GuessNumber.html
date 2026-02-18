@@ -151,7 +151,62 @@
         .attempts {
             font-size: 18px;
             color: #6c757d;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
+        }
+
+        .feedback-info {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .feedback-info.big {
+            color: #ff6b6b;
+            background: #fff5f5;
+        }
+
+        .feedback-info.small {
+            color: #4ecdc4;
+            background: #e3fafc;
+        }
+
+        .feedback-info.success {
+            color: #51cf66;
+            background: #ebfbee;
+        }
+
+        .feedback-info.hidden {
+            visibility: hidden;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            align-items: center;
+        }
+
+        .input-row input {
+            flex: 1;
+            padding: 15px;
+            font-size: 20px;
+            text-align: center;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            min-width: 0;
+        }
+
+        .input-row .submit-btn {
+            padding: 15px 30px;
+            font-size: 18px;
+            white-space: nowrap;
+            margin: 0;
         }
         .submit-btn {
             background: #51cf66;
@@ -247,12 +302,12 @@
              <div class="instruction">
                  我想好了一个 1-100 之间的数字，你来猜猜看！
              </div>
-             <div class="input-area">
-                 <input type="number" id="userGuessInput" min="1" max="100" placeholder="输入你的猜测 (1-100)">
-             </div>
-             <button class="submit-btn" onclick="userGuess()">猜！</button>
-             <div id="userFeedback" class="feedback" style="display: none;"></div>
+             <div id="feedbackInfo" class="feedback-info hidden"></div>
              <div class="attempts">已猜次数: <span id="userAttempts">0</span></div>
+             <div class="input-row">
+                 <input type="number" id="userGuessInput" min="1" max="100" placeholder="输入你的猜测 (1-100)">
+                 <button class="submit-btn" onclick="userGuess()">猜！</button>
+             </div>
          </div>
 
          <div id="computerGuessGame" class="game-area">
@@ -298,13 +353,13 @@
             currentMode = mode;
             document.getElementById('modeSelection').style.display = 'none';
 
-            if (mode === 'userGuess') {
-                targetNumber = Math.floor(Math.random() * 100) + 1;
-                userAttempts = 0;
-                document.getElementById('userAttempts').textContent = userAttempts;
-                document.getElementById('userFeedback').style.display = 'none';
-                document.getElementById('userGuessInput').value = '';
-                document.getElementById('userGuessGame').classList.add('active');
+             if (mode === 'userGuess') {
+                 targetNumber = Math.floor(Math.random() * 100) + 1;
+                 userAttempts = 0;
+                 document.getElementById('userAttempts').textContent = userAttempts;
+                 document.getElementById('feedbackInfo').classList.add('hidden');
+                 document.getElementById('userGuessInput').value = '';
+                 document.getElementById('userGuessGame').classList.add('active');
             } else {
                 computerMin = 1;
                 computerMax = 100;
@@ -331,24 +386,23 @@
                  return;
              }
              
-             userAttempts++;
-             document.getElementById('userAttempts').textContent = userAttempts;
-             
-             const feedback = document.getElementById('userFeedback');
-             feedback.style.display = 'block';
-             
-             if (guess > targetNumber) {
-                 feedback.textContent = '大了！';
- 
-                 feedback.className = 'feedback big';
-             } else if (guess < targetNumber) {
-                 feedback.textContent = '小了！';
-                 feedback.className = 'feedback small';
-             } else {
-                 feedback.textContent = '恭喜你，猜对了！';
-                 feedback.className = 'feedback success';
-                 showResult('user', userAttempts);
-             }
+              userAttempts++;
+              document.getElementById('userAttempts').textContent = userAttempts;
+              
+              const feedbackInfo = document.getElementById('feedbackInfo');
+              feedbackInfo.classList.remove('hidden');
+              
+              if (guess > targetNumber) {
+                  feedbackInfo.textContent = '🔼 大了！';
+                  feedbackInfo.className = 'feedback-info big';
+              } else if (guess < targetNumber) {
+                  feedbackInfo.textContent = '🔽 小了！';
+                  feedbackInfo.className = 'feedback-info small';
+              } else {
+                  feedbackInfo.textContent = '🎉 恭喜你，猜对了！';
+                  feedbackInfo.className = 'feedback-info success';
+                  showResult('user', userAttempts);
+              }
             
              input.value = '';
              input.focus();
