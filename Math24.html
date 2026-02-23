@@ -1134,7 +1134,7 @@
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-title" id="modalTitle">提示</div>
             <div class="modal-content" id="modalContent"></div>
-            <button class="close-btn" onclick="closeModal()">知道了</button>
+            <button class="close-btn" id="defaultCloseBtn" onclick="closeModal()">知道了</button>
         </div>
     </div>
 
@@ -1226,19 +1226,14 @@
             localStorage.setItem('math24_history', JSON.stringify(gameHistory));
         }
 
-        // Update operator buttons based on difficulty
+        // Update operator buttons based on difficulty (no restrictions now)
         function updateOperatorButtons() {
-            const allowedOps = operatorsByDifficulty[currentDifficulty];
+            // All operators are always available - difficulty only affects number generation
             const allOps = ['+', '-', '×', '÷'];
-            
             allOps.forEach(op => {
                 const btn = document.querySelector(`.operator-btn[data-op="${op}"]`);
                 if (btn) {
-                    if (allowedOps.includes(op)) {
-                        btn.classList.remove('disabled');
-                    } else {
-                        btn.classList.add('disabled');
-                    }
+                    btn.classList.remove('disabled');
                 }
             });
         }
@@ -1311,11 +1306,11 @@
             return numbers;
         }
 
-        // Find all possible solutions based on difficulty
+        // Find all possible solutions (all operators always available)
         function findAllSolutions(numbers, difficulty) {
             const solutions = [];
-            const allowedOps = operatorsByDifficulty[difficulty];
-            const jsOps = allowedOps.map(op => op === '×' ? '*' : op === '÷' ? '/' : op);
+            // Always use all operators for finding solutions
+            const jsOps = ['+', '-', '*', '/'];
             
             // Generate all permutations
             const permutations = getPermutations(numbers);
@@ -1470,15 +1465,7 @@
 
         // Add operator
         function addOperator(op) {
-            const allowedOps = operatorsByDifficulty[currentDifficulty];
-            const checkOp = op === '×' ? '*' : op === '÷' ? '/' : op;
-            
-            // Check if operator is allowed in current difficulty
-            if (['+', '-', '×', '÷'].includes(op) && !allowedOps.includes(op)) {
-                showModal('⛔ 不可用', `在${getDifficultyName(currentDifficulty)}模式下，不能使用"${op}"运算符！`);
-                return;
-            }
-            
+            // All operators are always available - no restrictions
             currentExpression.push(op);
             updateExpressionDisplay();
         }
@@ -1498,9 +1485,9 @@
             const totalCorrect = gameHistory.filter(h => h.correct).length;
             
             let newDifficulty = currentDifficulty;
-            if (totalCorrect >= 20 && currentDifficulty !== 'hard') {
+            if (totalCorrect >= 15 && currentDifficulty !== 'hard') {
                 newDifficulty = 'hard';
-            } else if (totalCorrect >= 10 && currentDifficulty === 'easy') {
+            } else if (totalCorrect >= 5 && currentDifficulty === 'easy') {
                 newDifficulty = 'medium';
             }
             
@@ -1808,6 +1795,9 @@
         function showModal(title, content) {
             document.getElementById('modalTitle').innerHTML = title;
             document.getElementById('modalContent').innerHTML = content;
+            // Restore default close button visibility
+            const defaultBtn = document.getElementById('defaultCloseBtn');
+            if (defaultBtn) defaultBtn.style.display = '';
             document.getElementById('modal').classList.add('active');
         }
 
@@ -1824,33 +1814,86 @@
                 <div class="setting-item">
                     <div class="setting-label">🎯 输入4个数字（1-9）</div>
                     <div style="display: flex; gap: 10px; justify-content: center; margin: 15px 0;">
-                        <input type="number" id="customNum1" min="1" max="9" value="1" style="width: 60px; height: 60px; text-align: center; font-size: 1.5rem; border: 2px solid #ddd; border-radius: 10px;">
-                        <input type="number" id="customNum2" min="1" max="9" value="2" style="width: 60px; height: 60px; text-align: center; font-size: 1.5rem; border: 2px solid #ddd; border-radius: 10px;">
-                        <input type="number" id="customNum3" min="1" max="9" value="3" style="width: 60px; height: 60px; text-align: center; font-size: 1.5rem; border: 2px solid #ddd; border-radius: 10px;">
-                        <input type="number" id="customNum4" min="1" max="9" value="4" style="width: 60px; height: 60px; text-align: center; font-size: 1.5rem; border: 2px solid #ddd; border-radius: 10px;">
+                        <input type="text" inputmode="numeric" id="customNum1" maxlength="1" placeholder="?" style="width: 60px; height: 60px; text-align: center; font-size: 1.5rem; border: 2px solid #ddd; border-radius: 10px;" oninput="handleCustomInput(this, 1)" onkeydown="handleCustomKeydown(event, 1)">
+                        <input type="text" inputmode="numeric" id="customNum2" maxlength="1" placeholder="?" style="width: 60px; height: 60px; text-align: center; font-size: 1.5rem; border: 2px solid #ddd; border-radius: 10px;" oninput="handleCustomInput(this, 2)" onkeydown="handleCustomKeydown(event, 2)">
+                        <input type="text" inputmode="numeric" id="customNum3" maxlength="1" placeholder="?" style="width: 60px; height: 60px; text-align: center; font-size: 1.5rem; border: 2px solid #ddd; border-radius: 10px;" oninput="handleCustomInput(this, 3)" onkeydown="handleCustomKeydown(event, 3)">
+                        <input type="text" inputmode="numeric" id="customNum4" maxlength="1" placeholder="?" style="width: 60px; height: 60px; text-align: center; font-size: 1.5rem; border: 2px solid #ddd; border-radius: 10px;" oninput="handleCustomInput(this, 4)" onkeydown="handleCustomKeydown(event, 4)">
                     </div>
                     <p style="color: #7f8c8d; font-size: 0.85rem; text-align: center;">输入4个1-9之间的数字，让小伙伴来解答吧！</p>
                 </div>
-                <button class="close-btn" onclick="startCustomQuestion()">开始出题</button>
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button class="close-btn" style="flex: 1; background: linear-gradient(145deg, #f5f7fa 0%, #e4e8ec 100%); color: var(--dark);" onclick="closeModal()">返回</button>
+                    <button class="close-btn" style="flex: 1;" onclick="startCustomQuestion()">出题</button>
+                </div>
             `;
             
             showModal('❓ 我问你', html);
             
-            // Auto-focus first input after modal opens
+            // Hide default close button
+            const defaultBtn = document.getElementById('defaultCloseBtn');
+            if (defaultBtn) defaultBtn.style.display = 'none';
+            
+            // Auto-focus first input after modal animation completes (0.4s transition)
             setTimeout(() => {
-                document.getElementById('customNum1')?.focus();
-            }, 100);
+                const firstInput = document.getElementById('customNum1');
+                if (firstInput) {
+                    firstInput.focus();
+                    firstInput.select();
+                }
+            }, 450);
+        }
+
+        // Handle custom number input - auto jump to next
+        function handleCustomInput(input, index) {
+            const value = input.value;
+            // Only allow 1-9
+            if (value && !/^[1-9]$/.test(value)) {
+                input.value = '';
+                return;
+            }
+            // Auto focus next input
+            if (value && index < 4) {
+                document.getElementById('customNum' + (index + 1))?.focus();
+            }
+        }
+
+        // Handle backspace key - delete or go back
+        function handleCustomKeydown(event, index) {
+            if (event.key === 'Backspace') {
+                const input = event.target;
+                if (input.value === '' && index > 1) {
+                    // Current is empty, go to previous
+                    event.preventDefault();
+                    const prevInput = document.getElementById('customNum' + (index - 1));
+                    prevInput?.focus();
+                }
+            }
         }
 
         // Start custom question
         function startCustomQuestion() {
-            const n1 = parseInt(document.getElementById('customNum1').value) || 1;
-            const n2 = parseInt(document.getElementById('customNum2').value) || 1;
-            const n3 = parseInt(document.getElementById('customNum3').value) || 1;
-            const n4 = parseInt(document.getElementById('customNum4').value) || 1;
+            const inputs = [
+                document.getElementById('customNum1'),
+                document.getElementById('customNum2'),
+                document.getElementById('customNum3'),
+                document.getElementById('customNum4')
+            ];
             
-            // Validate inputs
-            const nums = [n1, n2, n3, n4].map(n => Math.max(1, Math.min(9, n)));
+            // Check if all inputs are filled
+            for (let i = 0; i < inputs.length; i++) {
+                if (!inputs[i].value || !/^[1-9]$/.test(inputs[i].value)) {
+                    inputs[i].focus();
+                    showModal('⚠️ 请输入数字', `请输入第 ${i + 1} 个数字（1-9）`);
+                    return;
+                }
+            }
+            
+            const n1 = parseInt(inputs[0].value);
+            const n2 = parseInt(inputs[1].value);
+            const n3 = parseInt(inputs[2].value);
+            const n4 = parseInt(inputs[3].value);
+            
+            const nums = [n1, n2, n3, n4];
             
             // Check if solution exists
             const customSolutions = findAllSolutions(nums, currentDifficulty);
@@ -1885,7 +1928,7 @@
         // Open settings
         function openSettings() {
             const totalCorrect = gameHistory.filter(h => h.correct).length;
-            const nextUpgrade = totalCorrect < 10 ? 10 : (totalCorrect < 20 ? 20 : '已达最高');
+            const nextUpgrade = totalCorrect < 5 ? 5 : (totalCorrect < 15 ? 15 : '已达最高');
             
             const html = `
                 <div class="setting-item">
@@ -1908,7 +1951,7 @@
                 
                 <div class="setting-item">
                     <div class="toggle-switch ${timerEnabled ? 'active' : ''}" onclick="toggleTimer()">
-                        <div class="setting-label">⏱️ 倒计时</div>
+                        <div class="setting-label">⏱️ 计时</div>
                         <div class="toggle-slider"></div>
                     </div>
                 </div>
@@ -1925,7 +1968,7 @@
                     <div class="setting-label" style="color: white; justify-content: center;">📱 关于</div>
                     <div style="text-align: center; font-size: 0.9rem;">
                         <p style="margin: 5px 0;"><strong>数学游戏24点</strong></p>
-                        <p style="margin: 5px 0; opacity: 0.9;">版本 V1.0, Roy ❤️</p>
+                        <p style="margin: 5px 0; opacity: 0.9;">版本 V1.1, Roy ❤️</p>
                     </div>
                 </div>
             `;

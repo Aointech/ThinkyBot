@@ -327,27 +327,111 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .rules {
-            background: rgba(255,255,255,0.95);
-            padding: 20px;
-            border-radius: 15px;
+        .rules-container {
+            display: flex;
+            gap: 20px;
             margin-top: 20px;
             max-width: 800px;
             width: 100%;
+            flex-wrap: wrap;
+        }
+
+        .rules-box {
+            flex: 1;
+            min-width: 280px;
+            background: rgba(255,255,255,0.95);
+            border-radius: 15px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            overflow: hidden;
+            transition: flex 0.3s ease-out;
         }
 
-        .rules h3 {
-            color: var(--primary);
-            margin-bottom: 10px;
-            font-size: 1.2rem;
+        .rules-box.expanded {
+            flex: 100%;
         }
 
-        .rules p {
+        .rules-header {
+            padding: 15px 20px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .rules-header:hover {
+            background: linear-gradient(135deg, #5a6fd6, #6a3d9a);
+        }
+
+        .rules-header .arrow {
+            transition: transform 0.3s;
+        }
+
+        .rules-header.expanded .arrow {
+            transform: rotate(180deg);
+        }
+
+        .rules-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .rules-content.expanded {
+            max-height: 2000px;
+        }
+
+        .rules-content-inner {
+            padding: 15px 20px;
+        }
+
+        .rules-content p {
             color: #475569;
-            line-height: 1.6;
-            margin: 5px 0;
+            line-height: 1.8;
+            margin: 8px 0;
             font-size: 0.95rem;
+        }
+
+        .rules-content h4 {
+            color: var(--primary);
+            margin: 15px 0 10px 0;
+            font-size: 1rem;
+        }
+
+        .rules-content ul {
+            color: #475569;
+            line-height: 1.8;
+            margin: 8px 0;
+            padding-left: 25px;
+            font-size: 0.95rem;
+        }
+
+        .rules-content li {
+            margin: 5px 0;
+        }
+
+        .rules-content .formula {
+            background: linear-gradient(135deg, #f0f4ff, #e8f0fe);
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-family: monospace;
+            color: var(--primary);
+            text-align: center;
+            font-size: 1rem;
+        }
+
+        .rules-content .tip {
+            background: linear-gradient(135deg, #fff7ed, #ffedd5);
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            color: #c2410c;
+            font-size: 0.9rem;
         }
 
         .win-modal {
@@ -421,7 +505,7 @@
             }
 
             .disks-container {
-                bottom: 20px;
+                bottom: 60px;
             }
 
             .disk {
@@ -449,7 +533,9 @@
             <div class="disk-selector">
                 <label>🎯 难度选择：</label>
                 <select id="diskCount" onchange="initGame()">
-                    <option value="3" selected>3个盘子 (练习)</option>
+                    <option value="1">1个盘子 (准备)</option>
+                    <option value="2">2个盘子 (练习)</option>
+                    <option value="3" selected>3个盘子 (入门)</option>
                     <option value="4">4个盘子 (简单)</option>
                     <option value="5">5个盘子 (中等)</option>
                     <option value="6">6个盘子 (困难)</option>
@@ -502,18 +588,114 @@
             </div>
         </div>
 
-        <div class="rules">
-            <h3>📖 游戏规则</h3>
-            <p>1️⃣ 每次只能移动一个盘子</p>
-            <p>2️⃣ 大盘子不能放在小盘子上</p>
-            <p>3️⃣ 目标：把所有盘子从 A 柱移动到 C 柱</p>
-            <p>💡 提示：n 个盘子最少需要 2ⁿ-1 步（如 4 个盘子最少 15 步）</p>
+        <div class="rules-container">
+            <!-- 游戏规则 -->
+            <div class="rules-box">
+                <div class="rules-header" onclick="toggleRules('rules')">
+                    <span>📖 游戏规则</span>
+                    <span class="arrow">▼</span>
+                </div>
+                <div class="rules-content" id="rules">
+                    <div class="rules-content-inner">
+                        <p>1️⃣ 每次只能移动一个盘子</p>
+                        <p>2️⃣ 大盘子不能放在小盘子上</p>
+                        <p>3️⃣ 目标：把所有盘子从 A 柱移动到 C 柱</p>
+                        <p>💡 提示：n 个盘子最少需要 2ⁿ-1 步</p>
+                        <div class="tip">📌 操作：点击柱子选择最上面的盘子，再点击目标柱子移动</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 数学原理与解法 -->
+            <div class="rules-box">
+                <div class="rules-header" onclick="toggleRules('math')">
+                    <span>🧮 数学原理与解法</span>
+                    <span class="arrow">▼</span>
+                </div>
+                <div class="rules-content" id="math">
+                    <div class="rules-content-inner">
+                        <h3 style="text-align: center; color: var(--primary); margin-bottom: 5px;">🏯 汉诺塔探险手册</h3>
+                        <p style="text-align: center; color: #64748b; font-size: 0.9rem; margin-bottom: 15px;">——一个藏着数学秘密的古老游戏</p>
+                        
+                        <p>亲爱的小探险家，欢迎来到汉诺塔的世界！这里有好听的故事、好玩的游戏，还有让你变得更聪明的数学魔法。准备好了吗？我们出发吧！</p>
+                        
+                        <h4>第一章：来自印度的神秘传说</h4>
+                        <p><strong>🌟 天神的考验</strong></p>
+                        <p>很久很久以前，在遥远的印度，有一位叫梵天的天神。当他创造世界的时候，做了三根宝石针，然后在其中一根针上，放了64片闪闪发光的纯金圆盘——最大的在下面，最小的在上面。</p>
+                        <p>梵天找来庙里的僧侣，说："你们要不停地移动这些金盘，把它们全部移到另一根针上。记住两个规则：一次只能动一片，大的必须在下面，小的必须在上面。等全部移完的那一天，世界就会毁灭！"</p>
+                        
+                        <p><strong>🔮 世界真的会毁灭吗？</strong></p>
+                        <p>我们来做一道数学题：</p>
+                        <div class="formula">1个金盘→1步 | 2个金盘→3步 | 3个金盘→7步 | 4个金盘→15步</div>
+                        <p>你发现规律了吗？对了，n个金盘需要 <strong>2ⁿ - 1</strong> 步！</p>
+                        <p>那64个金盘呢？<strong>2⁶⁴ - 1 = 18446744073709551615 步！</strong></p>
+                        <div class="tip">如果僧侣们一秒钟搬一片金盘，那么他们要搬 <strong>5845亿年</strong>！而地球才45亿岁呢。所以小朋友们完全不用担心，世界会一直好好的！这个传说只是想告诉我们：当数量变得很大的时候，结果会超出我们的想象，这就是数学的魔力！</div>
+                        
+                        <h4>第二章：中国的"双胞胎"游戏——九连环</h4>
+                        <p>你知道吗？我们中国也有一个和汉诺塔"心意相通"的古老玩具，它叫<strong>九连环</strong>。</p>
+                        <p><strong>九连环长什么样？</strong></p>
+                        <p>九连环就像九个好朋友手拉手，套在一根长柄上。游戏的目标是把所有环从长柄上解下来，或者再装回去。</p>
+                        <p><strong>两个游戏是"双胞胎"！</strong></p>
+                        <p>科学家发现，九连环和汉诺塔就像一对双胞胎：</p>
+                        <ul>
+                            <li>汉诺塔的每一步，在九连环里都能找到对应的步骤</li>
+                            <li>九连环的每一个环，就像汉诺塔的一个圆盘</li>
+                            <li>它们用的都是同一个数学密码——<strong>二进制</strong></li>
+                        </ul>
+                        <p>九连环在中国已经有几百年的历史了！在明朝的《丹铅总录》这本书里就写到过它，连《红楼梦》里也提到林黛玉在宝玉房里和大家一起解九连环玩。我们的祖先早就玩过这么酷的益智游戏啦！</p>
+                        
+                        <h4>第三章：汉诺塔里的数学魔法</h4>
+                        <p><strong>✨ 魔法一：神奇的翻倍——指数增长</strong></p>
+                        <p>玩汉诺塔的时候，你发现了吗？</p>
+                        <ul>
+                            <li>1个盘 → 1步</li>
+                            <li>2个盘 → 3步（比1个多了2步）</li>
+                            <li>3个盘 → 7步（比2个多了4步）</li>
+                            <li>4个盘 → 15步（比3个多了8步）</li>
+                        </ul>
+                        <p>每增加一个盘，多走的步数就会翻倍！这就是数学里的"指数增长"，像变魔法一样！</p>
+                        
+                        <p><strong>✨ 魔法二：大事化小——递归解法</strong></p>
+                        <p>汉诺塔最厉害的地方，是它教我们一个超有用的思考方法：</p>
+                        <p>遇到一个难题，比如要搬4个盘子，先别慌！你只要想：</p>
+                        <ul>
+                            <li>先把上面3个盘搬到B柱（这本身就是一个小一点的问题，对不对？）</li>
+                            <li>把最大的盘从A搬到C</li>
+                            <li>再把B柱上的3个盘搬到C</li>
+                        </ul>
+                        <p>你看，一个4个盘子的大问题，就变成了两个3个盘子的小问题！而3个盘的问题，又可以变成两个2个盘子的问题……一直变小，直到变成最简单的1个盘问题。</p>
+                        <p>这个方法在数学里叫<strong>递归</strong>，它告诉我们：<strong>任何大困难，都可以拆成小困难一步步解决！</strong></p>
+                        
+                        <h4>第四章：解法技巧——魔法口诀</h4>
+                        <p>学会了数学原理，我们再学一个超级好用的魔法口诀，让你玩汉诺塔又快又好！</p>
+                        <p><strong>🎯 最小的盘子"单数顺时针，双数逆时针"</strong></p>
+                        <ul>
+                            <li>第1步移动最小盘子的位置：单数（可以想想简化只有1个盘子）直接往目标移动，双数（可以想象简化为2个盘子）要先往中间柱子过渡</li>
+                            <li>始终记住最小盘子的移动顺序：
+                                <ul style="margin-top: 5px;">
+                                    <li>如果盘子总数是<strong>单数</strong>（比如1、3、5个），最小的盘子要走：<strong>A → C → B → A</strong>（顺时针转圈）</li>
+                                    <li>如果盘子总数是<strong>双数</strong>（比如2、4、6个），最小的盘子要走：<strong>A → B → C → A</strong>（逆时针转圈）</li>
+                                </ul>
+                            </li>
+                            <li>剩下的其它盘子完全按规则跟随移动就好了</li>
+                        </ul>
+                        
+                        <div class="tip" style="background: linear-gradient(135deg, #dcfce7, #bbf7d0); color: #166534;">
+                            🎉 <strong>学会了吧？现在开始你的挑战！</strong><br>
+                            从1、2、3个盘子开始，一步步挑战到4个、5个...<br>
+                            你也可以教爸爸妈妈怎么玩，和小伙伴比赛，看谁步骤少<br>
+                            记住：每多一个盘，挑战就翻倍，但你的智慧也会翻倍！<br>
+                            <strong>加油，未来的数学家！🎉</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     <footer class="footer">
         <hr>
         <script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
-        <p>让学习变得有趣  |  Roy@2026  | 访问量 <span id="busuanzi_page_pv"></span> 次</p>
+        <p>让学习变得有趣  |  Roy@2026 V1.1 | 访问量 <span id="busuanzi_page_pv"></span> 次</p>
     </footer>
 
     <div class="win-modal" id="winModal">
@@ -812,6 +994,26 @@
         // 睡眠函数
         function sleep(ms) {
             return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // 切换规则展开/收缩
+        function toggleRules(id) {
+            const content = document.getElementById(id);
+            const header = content.previousElementSibling;
+            const box = content.parentElement;
+            const isCurrentlyExpanded = content.classList.contains('expanded');
+            
+            // 先收起所有
+            document.querySelectorAll('.rules-content').forEach(c => c.classList.remove('expanded'));
+            document.querySelectorAll('.rules-header').forEach(h => h.classList.remove('expanded'));
+            document.querySelectorAll('.rules-box').forEach(b => b.classList.remove('expanded'));
+            
+            // 如果当前不是展开状态，则展开
+            if (!isCurrentlyExpanded) {
+                content.classList.add('expanded');
+                header.classList.add('expanded');
+                box.classList.add('expanded');
+            }
         }
 
         // 初始化
