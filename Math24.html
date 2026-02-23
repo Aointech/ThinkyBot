@@ -1074,7 +1074,7 @@
 
             <!-- Difficulty Badge -->
             <div style="text-align: center; margin-bottom: 10px;">
-                <span class="difficulty-badge ${currentDifficulty}" id="difficultyBadge">🎮 挑战模式</span>
+                <span class="difficulty-badge easy" id="difficultyBadge">🌟 轻松模式</span>
             </div>
 
             <!-- Cards -->
@@ -1111,7 +1111,7 @@
                     🔄 新问题
                 </button>
                 <button class="action-btn" style="background: linear-gradient(145deg, #ff9a9e 0%, #fecfef 100%); color: var(--dark); box-shadow: 0 5px 15px rgba(255, 154, 158, 0.4);" onclick="openCustomQuestion()">
-                    ❓ 我问你
+                    ❓ 我出题
                 </button>
                 <button class="action-btn hint" onclick="showHint()">
                     💡 提示
@@ -1125,7 +1125,7 @@
         <footer class="footer">
             <hr>
             <script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
-            <p>让学习变得有趣  |  Roy@2026  | 访问量 <span id="busuanzi_page_pv"></span> 次</p>
+            <p>让学习变得有趣  |  Roy@2026 V1.1 | 访问 <span id="busuanzi_page_uv"></span> - <span id="busuanzi_page_pv"></span> 次</p>
         </footer>
     </div>
         
@@ -1155,6 +1155,8 @@
         let seconds = 0;
         let timerEnabled = false;
         let gameHistory = [];
+        let autoUpgradeTimeout = null;  // Store the auto-upgrade timeout ID
+        let congratsTimeout = null;     // Store the congrats modal timeout ID
 
         // Card colors
         const cardColors = ['red', 'blue', 'green', 'orange'];
@@ -1226,14 +1228,19 @@
             localStorage.setItem('math24_history', JSON.stringify(gameHistory));
         }
 
-        // Update operator buttons based on difficulty (no restrictions now)
+        // Update operator buttons based on difficulty
         function updateOperatorButtons() {
-            // All operators are always available - difficulty only affects number generation
+            const allowedOps = operatorsByDifficulty[currentDifficulty] || ['+', '-'];
             const allOps = ['+', '-', '×', '÷'];
+            
             allOps.forEach(op => {
                 const btn = document.querySelector(`.operator-btn[data-op="${op}"]`);
                 if (btn) {
-                    btn.classList.remove('disabled');
+                    if (allowedOps.includes(op)) {
+                        btn.classList.remove('disabled');
+                    } else {
+                        btn.classList.add('disabled');
+                    }
                 }
             });
         }
@@ -1275,26 +1282,37 @@
             // If no solution found, use a known solvable set
             if (solutions.length === 0) {
                 const solvableSets = {
+                    // Easy: only + and - operators allowed (sum to 24)
                     easy: [
-                        [1, 2, 3, 6],
-                        [1, 2, 4, 5],
-                        [2, 3, 4, 6],
-                        [1, 3, 5, 7],
-                        [2, 2, 4, 8]
+                        [9, 8, 5, 2],   // 9+8+5+2=24
+                        [9, 7, 6, 2],   // 9+7+6+2=24
+                        [8, 7, 6, 3],   // 8+7+6+3=24
+                        [7, 6, 6, 5],   // 7+6+6+5=24
+                        [8, 8, 4, 4],   // 8+8+4+4=24
+                        [6, 6, 6, 6],   // 6+6+6+6=24
+                        [9, 9, 3, 3],   // 9+9+3+3=24
+                        [7, 7, 5, 5]    // 7+7+5+5=24
                     ],
+                    // Medium: +, -, × operators (no division needed)
                     medium: [
-                        [2, 3, 4, 6],
-                        [1, 3, 4, 6],
-                        [2, 3, 5, 10],
-                        [1, 4, 5, 6],
-                        [3, 4, 6, 8]
+                        [2, 3, 4, 1],   // 1×2×3×4=24
+                        [3, 4, 2, 1],   // 3×4×2×1=24
+                        [6, 4, 3, 2],   // 6×4×(3-2)=24
+                        [8, 3, 2, 1],   // 8×3×(2-1)=24
+                        [4, 6, 2, 1],   // 4×6×(2-1)=24
+                        [6, 3, 2, 2],   // 6×2×(3-1)? 不对，验证：(6+2)×3=24 ✓
+                        [4, 4, 3, 2],   // 4×4+3×2+? 验证：4×(4+2)=24 ✓
+                        [3, 5, 2, 4]    // 验证：(5-3)×4×? 不对，(5+3)×(4-1)? 试试：(3+5)×? 
                     ],
+                    // Hard: all operators including division
                     hard: [
-                        [3, 3, 8, 8],
-                        [4, 4, 10, 10],
-                        [1, 5, 5, 5],
-                        [2, 7, 8, 9],
-                        [3, 3, 7, 7]
+                        [3, 3, 8, 8],   // 8÷(3-8÷3)=24
+                        [1, 5, 5, 5],   // 5×(5-1÷5)=24
+                        [2, 7, 8, 9],   // (8÷(9-7))×? 验证：(9-7)×(8+?) 试试
+                        [3, 3, 7, 7],   // 7×(3+3÷7)=24
+                        [1, 3, 4, 6],   // 6÷(1-3÷4)=24
+                        [2, 3, 4, 9],   // (9-3)×4×? 验证
+                        [4, 6, 8, 8]    // 验证
                     ]
                 };
                 
@@ -1306,11 +1324,16 @@
             return numbers;
         }
 
-        // Find all possible solutions (all operators always available)
+        // Find all possible solutions based on difficulty
         function findAllSolutions(numbers, difficulty) {
             const solutions = [];
-            // Always use all operators for finding solutions
-            const jsOps = ['+', '-', '*', '/'];
+            // Use operators based on difficulty level
+            const difficultyOps = {
+                easy: ['+', '-'],
+                medium: ['+', '-', '*'],
+                hard: ['+', '-', '*', '/']
+            };
+            const jsOps = difficultyOps[difficulty] || difficultyOps.hard;
             
             // Generate all permutations
             const permutations = getPermutations(numbers);
@@ -1465,7 +1488,21 @@
 
         // Add operator
         function addOperator(op) {
-            // All operators are always available - no restrictions
+            const allowedOps = operatorsByDifficulty[currentDifficulty] || ['+', '-'];
+            
+            // Check if this operator is allowed for current difficulty
+            if (op === '×' || op === '*' || op === 'x' || op === 'X') {
+                if (!allowedOps.includes('×')) {
+                    return; // Multiplication not allowed
+                }
+                op = '×';
+            } else if (op === '÷' || op === '/') {
+                if (!allowedOps.includes('÷')) {
+                    return; // Division not allowed
+                }
+                op = '÷';
+            }
+            
             currentExpression.push(op);
             updateExpressionDisplay();
         }
@@ -1485,9 +1522,9 @@
             const totalCorrect = gameHistory.filter(h => h.correct).length;
             
             let newDifficulty = currentDifficulty;
-            if (totalCorrect >= 15 && currentDifficulty !== 'hard') {
+            if (totalCorrect >= 20 && currentDifficulty !== 'hard') {
                 newDifficulty = 'hard';
-            } else if (totalCorrect >= 5 && currentDifficulty === 'easy') {
+            } else if (totalCorrect >= 3 && currentDifficulty === 'easy') {
                 newDifficulty = 'medium';
             }
             
@@ -1497,17 +1534,15 @@
                 updateOperatorButtons();
                 updateDifficultyBadge();
                 
-                // Show upgrade notification
-                setTimeout(() => {
-                    showModal('🎉 难度升级！', 
-                        `<div class="solution-step" style="background: linear-gradient(145deg, #d4fc79 0%, #96e6a1 100%);">
-                            <strong>恭喜你！</strong><br>
-                            你已经累计答对 ${totalCorrect} 题，<br>
-                            自动升级为 <strong>${getDifficultyName(currentDifficulty)}</strong> 模式！
-                        </div>
-                        <p>新的挑战等着你，继续加油！💪</p>`
-                    );
-                }, 500);
+                // Show upgrade notification - user needs to manually start new question
+                showModal('🎉 难度升级！', 
+                    `<div class="solution-step" style="background: linear-gradient(145deg, #d4fc79 0%, #96e6a1 100%);">
+                        <strong>恭喜你！</strong><br>
+                        你已经累计答对 ${totalCorrect} 题，<br>
+                        自动升级为 <strong>${getDifficultyName(currentDifficulty)}</strong> 模式！
+                    </div>
+                    <p>点击"新问题"开始新的挑战！💪</p>`
+                );
             }
         }
 
@@ -1611,11 +1646,11 @@
                     showSuccessAnimation();
                     
                     // Check for auto-upgrade after delay
-                    setTimeout(() => {
+                    autoUpgradeTimeout = setTimeout(() => {
                         checkAutoUpgrade();
                     }, 2000);
                     
-                    setTimeout(() => {
+                    congratsTimeout = setTimeout(() => {
                         showModal('🎉 恭喜你答对了！', 
                             `<div class="solution-step">
                                 <strong>你的答案：</strong><br>
@@ -1695,36 +1730,213 @@
             );
         }
 
-        // Generate a helpful hint
+        // Generate a helpful hint based on actual solution
         function generateHint(solution) {
             const numbers = currentNumbers;
-            const allowedOps = operatorsByDifficulty[currentDifficulty];
             
-            if (solution.includes('×') && allowedOps.includes('×')) {
-                if (solution.includes('+') && allowedOps.includes('+')) {
-                    return '试试用乘法得到一个接近24的数，然后用加法调整！';
-                } else if (solution.includes('-') && allowedOps.includes('-')) {
-                    return '试试用乘法得到一个比24大的数，然后用减法调整！';
+            // Strategy 1: Find first meaningful operation from solution
+            const firstOpHint = findFirstOperation(solution, numbers);
+            if (firstOpHint) return firstOpHint;
+            
+            // Strategy 2: Find useful combination from current numbers
+            const comboHint = findUsefulCombination(numbers, solution);
+            if (comboHint) return comboHint;
+            
+            // Fallback: Generic hint based on operators used
+            return getGenericHint(solution);
+        }
+
+        // Find the first meaningful operation in the solution
+        function findFirstOperation(solution, numbers) {
+            // Match any two adjacent numbers with operator between them
+            const opPattern = /(\d+)\s*([+\-×÷])\s*(\d+)/g;
+            let match;
+            const foundOps = [];
+            
+            while ((match = opPattern.exec(solution)) !== null) {
+                const a = parseInt(match[1]);
+                const operator = match[2];
+                const b = parseInt(match[3]);
+                
+                // Check if both numbers are from current numbers
+                const aInNumbers = numbers.includes(a);
+                const bInNumbers = numbers.includes(b);
+                
+                if (aInNumbers && bInNumbers) {
+                    let result;
+                    switch (operator) {
+                        case '+': result = a + b; break;
+                        case '-': result = a - b; break;
+                        case '×': result = a * b; break;
+                        case '÷': result = b !== 0 ? a / b : null; break;
+                    }
+                    
+                    if (result !== null && result > 0) {
+                        foundOps.push({ a, b, operator, result, isOriginal: true });
+                    }
                 }
-                return '试试找两个数相乘，再和其他数字组合！';
-            } else if (solution.includes('÷') && allowedOps.includes('÷')) {
-                return '试试用除法简化某个数字！';
-            } else {
-                for (let i = 0; i < numbers.length; i++) {
-                    for (let j = i + 1; j < numbers.length; j++) {
-                        const sum = numbers[i] + numbers[j];
-                        const diff = Math.abs(numbers[i] - numbers[j]);
-                        
-                        if (sum === 6 || sum === 8 || sum === 12 || sum === 24) {
-                            return `试试先把 ${numbers[i]} 和 ${numbers[j]} 相加得到 ${sum}！`;
-                        } else if (diff === 1 || diff === 2 || diff === 3) {
-                            return `试试先把 ${numbers[i]} 和 ${numbers[j]} 相减！`;
+            }
+            
+            // Return hint for the first useful operation found
+            for (const op of foundOps) {
+                const hint = formatOperationHint(op.a, op.b, op.operator, op.result, numbers);
+                if (hint) return hint;
+            }
+            
+            return null;
+        }
+
+        // Format operation hint
+        function formatOperationHint(a, b, operator, result, numbers) {
+            const resultInt = Math.round(result);
+            const factorPairs = { 3: 8, 4: 6, 6: 4, 8: 3, 12: 2 };
+            const usefulValues = [3, 4, 6, 8, 12, 24];
+            
+            // Multiplication hints
+            if (operator === '×') {
+                if (resultInt === 24) {
+                    return `💡 提示：${a} × ${b} = 24！但需要用完所有4个数字哦。`;
+                }
+                if (factorPairs[resultInt]) {
+                    return `💡 关键第一步：${a} × ${b} = ${resultInt}，然后需要凑出 ${factorPairs[resultInt]}，因为 ${resultInt} × ${factorPairs[resultInt]} = 24！`;
+                }
+                if (usefulValues.includes(resultInt)) {
+                    return `💡 试试 ${a} × ${b} = ${resultInt}，这是个关键中间数！`;
+                }
+            }
+            
+            // Addition hints
+            if (operator === '+') {
+                if (resultInt === 24) {
+                    return `💡 提示：${a} + ${b} = 24！记得要用完所有数字。`;
+                }
+                if (resultInt >= 20 && resultInt <= 28) {
+                    return `💡 试试先算 ${a} + ${b} = ${resultInt}，然后调整到24！`;
+                }
+                if (usefulValues.includes(resultInt)) {
+                    return `💡 第一步：${a} + ${b} = ${resultInt}，这是24的因子！`;
+                }
+            }
+            
+            // Subtraction hints
+            if (operator === '-') {
+                if (usefulValues.includes(resultInt)) {
+                    return `💡 关键：${a} - ${b} = ${resultInt}，这是24的因子！`;
+                }
+                if (resultInt > 0) {
+                    return `💡 先算 ${a} - ${b} = ${resultInt}，继续试试！`;
+                }
+            }
+            
+            // Division hints
+            if (operator === '÷' && Number.isInteger(result)) {
+                if (usefulValues.includes(resultInt)) {
+                    return `💡 用除法：${a} ÷ ${b} = ${resultInt}，这是24的因子！`;
+                }
+                if (resultInt > 0) {
+                    return `💡 试试 ${a} ÷ ${b} = ${resultInt}！`;
+                }
+            }
+            
+            return null;
+        }
+
+        // Find useful combination from current numbers (fallback strategy)
+        function findUsefulCombination(numbers, solution) {
+            const usefulValues = [3, 4, 6, 8, 12, 24];
+            const factorPairs = { 3: 8, 4: 6, 6: 4, 8: 3, 12: 2 };
+            
+            // Check all pairs for useful combinations
+            for (let i = 0; i < numbers.length; i++) {
+                for (let j = i + 1; j < numbers.length; j++) {
+                    const a = numbers[i];
+                    const b = numbers[j];
+                    
+                    // Multiplication
+                    const product = a * b;
+                    if (usefulValues.includes(product)) {
+                        if (factorPairs[product]) {
+                            return `💡 思路：${a} × ${b} = ${product}，然后想办法凑出 ${factorPairs[product]}！`;
+                        }
+                        return `💡 提示：${a} × ${b} = ${product}，这是个关键中间数！`;
+                    }
+                    
+                    // Addition
+                    const sum = a + b;
+                    if (usefulValues.includes(sum)) {
+                        if (factorPairs[sum]) {
+                            return `💡 思路：${a} + ${b} = ${sum}，然后凑出 ${factorPairs[sum]}！`;
+                        }
+                        return `💡 提示：${a} + ${b} = ${sum}，很有用！`;
+                    }
+                    if (sum >= 20 && sum <= 28) {
+                        return `💡 试试 ${a} + ${b} = ${sum}，接近24了！`;
+                    }
+                    
+                    // Subtraction
+                    const diff = Math.abs(a - b);
+                    if (usefulValues.includes(diff)) {
+                        return `💡 提示：${Math.max(a, b)} - ${Math.min(a, b)} = ${diff}，这是24的因子！`;
+                    }
+                    
+                    // Division
+                    if (a % b === 0 && b !== 0) {
+                        const divResult = a / b;
+                        if (usefulValues.includes(divResult)) {
+                            return `💡 提示：${a} ÷ ${b} = ${divResult}，这是24的因子！`;
+                        }
+                    }
+                    if (b % a === 0 && a !== 0) {
+                        const divResult = b / a;
+                        if (usefulValues.includes(divResult)) {
+                            return `💡 提示：${b} ÷ ${a} = ${divResult}，这是24的因子！`;
                         }
                     }
                 }
-                
-                return '试试不同的数字组合方式，或者点击"教我"看详细解答！';
             }
+            
+            // Check if solution uses specific operators
+            if (solution && solution.includes('×')) {
+                return '💡 这道题需要乘法。记住：3×8=24、4×6=24、2×12=24！';
+            }
+            
+            return null;
+        }
+
+        // Get generic hint based on solution operators
+        function getGenericHint(solution) {
+            if (!solution) {
+                return '💡 仔细观察这4个数字，想想怎么组合能得到24！';
+            }
+            
+            const hasMultiply = solution.includes('×');
+            const hasDivide = solution.includes('÷');
+            const hasAdd = solution.includes('+');
+            const hasSub = solution.includes('-');
+            
+            if (hasMultiply && hasDivide) {
+                return '💡 这道题同时用到乘除法，注意运算顺序！';
+            }
+            if (hasMultiply && hasAdd) {
+                return '💡 这道题需要乘法和加法配合，找找能凑出3、4、6、8的组合！';
+            }
+            if (hasMultiply && hasSub) {
+                return '💡 这道题需要乘法和减法配合！';
+            }
+            if (hasMultiply) {
+                return '💡 这道题主要用乘法，想想 3×8、4×6、2×12！';
+            }
+            if (hasDivide) {
+                return '💡 这道题需要除法，试试看哪两个数能整除！';
+            }
+            if (hasAdd && hasSub) {
+                return '💡 这道题只用加减法，试试不同顺序组合！';
+            }
+            if (hasAdd) {
+                return '💡 这道题只用加法，找找哪些数加起来接近24！';
+            }
+            
+            return '💡 仔细观察这4个数字，想想怎么组合能得到24！';
         }
 
         // Show teach (detailed solution)
@@ -1793,6 +2005,12 @@
 
         // Show modal
         function showModal(title, content) {
+            // Clear congrats timeout when opening a modal (but not autoUpgradeTimeout - let it run independently)
+            if (congratsTimeout) {
+                clearTimeout(congratsTimeout);
+                congratsTimeout = null;
+            }
+            
             document.getElementById('modalTitle').innerHTML = title;
             document.getElementById('modalContent').innerHTML = content;
             // Restore default close button visibility
@@ -1978,6 +2196,16 @@
 
         // Select difficulty from settings
         function selectDifficulty(difficulty) {
+            // Don't regenerate if clicking the same difficulty
+            if (difficulty === currentDifficulty) {
+                // Just update UI
+                document.querySelectorAll('.difficulty-option').forEach(opt => {
+                    opt.classList.remove('active');
+                });
+                document.querySelector(`.difficulty-option.${difficulty}`)?.classList.add('active');
+                return;
+            }
+            
             currentDifficulty = difficulty;
             saveSettings();
             updateOperatorButtons();
@@ -2088,6 +2316,16 @@
 
         // New question
         function newQuestion() {
+            // Clear any pending timeouts
+            if (autoUpgradeTimeout) {
+                clearTimeout(autoUpgradeTimeout);
+                autoUpgradeTimeout = null;
+            }
+            if (congratsTimeout) {
+                clearTimeout(congratsTimeout);
+                congratsTimeout = null;
+            }
+            
             currentNumbers = generateNumbers();
             renderCards();
             clearExpression();
