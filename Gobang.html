@@ -117,6 +117,25 @@
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }
+
+        .undo-btn {
+            padding: 10px 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            color: #fff;
+            background: linear-gradient(135deg, #4ECDC4, #44b09e);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+            font-family: 'Nunito', 'ZCOOL KuaiLe', sans-serif;
+        }
+
+        .undo-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
         
         .game-info {
             background: rgba(255, 255, 255, 0.9);
@@ -337,6 +356,7 @@
             <button class="mode-btn" id="mode-pvp" onclick="setMode('pvp')">👥 两人对战</button>
         </div>
         <button class="reset-btn" onclick="resetGame()">🔄 重新开始</button>
+        <button class="undo-btn" onclick="undoMove()">↩️ 悔棋</button>
     </div>
     
     <div class="game-info">
@@ -403,6 +423,7 @@
         let gameOver = false;
         let gameMode = 'pve';
         let isAiThinking = false;
+        let lastMove = null;
         
         function initBoard() {
             board = [];
@@ -487,6 +508,7 @@
         }
         
         function makeMove(row, col, player) {
+            lastMove = { row, col, player };
             board[row][col] = player;
 
             const intersections = document.querySelectorAll('.intersection');
@@ -517,7 +539,27 @@
             updatePlayerIndicator();
         }
         
-        function aiMove() {
+        function undoMove() {
+            if (!lastMove || gameOver || isAiThinking) {
+                return;
+            }
+
+            const { row, col, player } = lastMove;
+            board[row][col] = EMPTY;
+
+            const intersections = document.querySelectorAll('.intersection');
+            const intersection = intersections[row * BOARD_SIZE + col];
+            const piece = intersection.querySelector('.piece');
+            if (piece) {
+                piece.remove();
+            }
+            intersection.classList.remove('occupied');
+
+            currentPlayer = player;
+            lastMove = null;
+            updatePlayerIndicator();
+        }
+            function aiMove() {
             const move = getBestMove();
             if (move) {
                 makeMove(move.row, move.col, WHITE);
@@ -717,6 +759,7 @@
             currentPlayer = BLACK;
             gameOver = false;
             isAiThinking = false;
+            lastMove = null;
             updatePlayerIndicator();
             
             const winnerMessage = document.getElementById('winner-message');
