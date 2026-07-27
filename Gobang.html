@@ -424,6 +424,7 @@
         let gameMode = 'pve';
         let isAiThinking = false;
         let lastMove = null;
+        let previousMove = null;
         
         function initBoard() {
             board = [];
@@ -508,6 +509,7 @@
         }
         
         function makeMove(row, col, player) {
+            previousMove = lastMove;
             lastMove = { row, col, player };
             board[row][col] = player;
 
@@ -544,22 +546,41 @@
                 return;
             }
 
-            const { row, col, player } = lastMove;
-            board[row][col] = EMPTY;
-
-            const intersections = document.querySelectorAll('.intersection');
-            const intersection = intersections[row * BOARD_SIZE + col];
-            const piece = intersection.querySelector('.piece');
-            if (piece) {
-                piece.remove();
+            if (gameMode === 'pvp') {
+                const { row, col, player } = lastMove;
+                board[row][col] = EMPTY;
+                const intersections = document.querySelectorAll('.intersection');
+                const intersection = intersections[row * BOARD_SIZE + col];
+                const piece = intersection.querySelector('.piece');
+                if (piece) piece.remove();
+                intersection.classList.remove('occupied');
+                currentPlayer = player;
+            } else {
+                if (!previousMove) return;
+                // 撤回 AI 的棋
+                const aiMove = lastMove;
+                board[aiMove.row][aiMove.col] = EMPTY;
+                let intersections = document.querySelectorAll('.intersection');
+                let intersection = intersections[aiMove.row * BOARD_SIZE + aiMove.col];
+                let piece = intersection.querySelector('.piece');
+                if (piece) piece.remove();
+                intersection.classList.remove('occupied');
+                // 撤回人的棋
+                const humanMove = previousMove;
+                board[humanMove.row][humanMove.col] = EMPTY;
+                intersections = document.querySelectorAll('.intersection');
+                intersection = intersections[humanMove.row * BOARD_SIZE + humanMove.col];
+                piece = intersection.querySelector('.piece');
+                if (piece) piece.remove();
+                intersection.classList.remove('occupied');
+                currentPlayer = BLACK;
             }
-            intersection.classList.remove('occupied');
 
-            currentPlayer = player;
             lastMove = null;
+            previousMove = null;
             updatePlayerIndicator();
         }
-            function aiMove() {
+        function aiMove() {
             const move = getBestMove();
             if (move) {
                 makeMove(move.row, move.col, WHITE);
@@ -760,6 +781,7 @@
             gameOver = false;
             isAiThinking = false;
             lastMove = null;
+            previousMove = null;
             updatePlayerIndicator();
             
             const winnerMessage = document.getElementById('winner-message');
